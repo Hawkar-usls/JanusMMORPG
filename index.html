@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JANUS // GALACTIC TERMINAL</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --primary: #ffb800; /* Янтарный цвет Fallout */
+            --secondary: rgba(255, 184, 0, 0.7);
+            --bg: #050505;
+            --glass: rgba(255, 184, 0, 0.1);
+            --alert: #ff3333;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            margin: 0; padding: 0; background: #000; color: var(--primary);
+            font-family: 'Share Tech Mono', monospace; height: 100vh;
+            overflow: hidden; display: flex; justify-content: center; align-items: center;
+        }
+
+        /* === КОРПУС ТЕРМИНАЛА === */
+        #monitor {
+            width: 100vw; height: 100vh; background: var(--bg);
+            border: 2px solid var(--secondary);
+            box-shadow: inset 0 0 80px rgba(0,0,0,0.9);
+            position: relative; overflow: hidden; display: grid;
+            grid-template-columns: 220px 1fr 220px;
+            grid-template-rows: 50px 1fr 100px; 
+            grid-gap: 10px; padding: 10px;
+        }
+
+        /* Эффект старого ЭЛТ монитора */
+        #monitor::before {
+            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 100; background-size: 100% 2px, 3px 100%; pointer-events: none;
+        }
+
+        .panel { border: 1px solid var(--primary); background: var(--glass); padding: 10px; position: relative; display: flex; flex-direction: column; }
+        .panel-header { position: absolute; top: -9px; left: 8px; background: var(--bg); padding: 0 4px; color: var(--primary); font-size: 11px; font-weight: bold; border: 1px solid var(--primary); }
+
+        /* ВЕРХНЯЯ ПАНЕЛЬ */
+        #top-bar { grid-column: 1 / 4; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--secondary); padding-bottom: 5px; }
+        .logo { font-size: 22px; font-weight: bold; letter-spacing: 4px; text-shadow: 0 0 10px var(--primary); }
+        .server-status { font-size: 10px; color: var(--secondary); animation: blink 2s infinite; }
+
+        /* ЛЕВАЯ ПАНЕЛЬ: СТАТУС */
+        #status-panel { grid-row: 2 / 4; grid-column: 1 / 2; }
+        .stat-row { margin-bottom: 12px; }
+        .stat-label { font-size: 11px; display: flex; justify-content: space-between; margin-bottom: 3px; }
+        .bar-bg { width: 100%; height: 8px; background: rgba(0,0,0,0.6); border: 1px solid var(--primary); }
+        .bar-fill { height: 100%; background: var(--primary); box-shadow: 0 0 8px var(--primary); transition: width 0.5s ease-out; }
+        .inv-list { list-style: none; padding: 0; font-size: 11px; margin-top: 15px; flex: 1; overflow-y: auto; }
+        .inv-list li { padding: 4px 0; border-bottom: 1px dashed var(--glass); display: flex; justify-content: space-between; }
+
+        /* ПРАВАЯ ПАНЕЛЬ: РАДАР */
+        #map-panel { grid-row: 2 / 3; grid-column: 3 / 4; position: relative; }
+        #sector-canvas { width: 100%; height: 100%; }
+        #target-info { grid-row: 3 / 4; grid-column: 3 / 4; font-size: 11px; }
+        .t-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+
+        /* ЦЕНТР: ЛОГ */
+        #main-view { grid-column: 2 / 3; grid-row: 2 / 3; border: none; background: transparent; }
+        #log-feed { flex: 1; overflow-y: auto; font-size: 14px; line-height: 1.5; text-shadow: 0 0 2px var(--primary); padding-right: 5px; }
+        #log-feed::-webkit-scrollbar { width: 4px; background: #000; }
+        #log-feed::-webkit-scrollbar-thumb { background: var(--primary); }
+
+        .msg-sys { color: var(--secondary); font-size: 12px; margin-top: 10px; font-style: italic; opacity: 0.8; }
+        .msg-ai { color: var(--primary); margin-bottom: 12px; border-left: 2px solid var(--secondary); padding-left: 10px; white-space: pre-wrap; }
+        .msg-user { color: #fff; text-align: right; margin: 8px 0; opacity: 0.9; font-style: italic; border-right: 2px solid var(--primary); padding-right: 10px; }
+        .msg-err { color: var(--alert); border: 1px dashed var(--alert); padding: 5px; margin-top: 5px; }
+
+        /* ВВОД КОМАНД */
+        #input-panel { grid-column: 2 / 3; grid-row: 3 / 4; display: flex; flex-direction: column; justify-content: flex-end; border: none; background: transparent; }
+        .cmd-wrapper { display: flex; align-items: center; background: rgba(0,0,0,0.8); border: 1px solid var(--primary); padding: 8px; }
+        .prompt { margin-right: 8px; font-weight: bold; animation: blink 1.5s infinite; }
+        input { flex: 1; background: transparent; border: none; color: #fff; font-family: inherit; font-size: 16px; outline: none; }
+        .send-btn { background: var(--primary); color: #000; border: none; font-weight: bold; cursor: pointer; padding: 4px 10px; margin-left: 5px; font-family: inherit; }
+        
+        .loading-bar { height: 2px; width: 0%; background: var(--primary); transition: width 0.2s; margin-top: -2px; position:absolute; top:0; left:0; z-index: 101; }
+
+        @keyframes blink { 50% { opacity: 0.3; } }
+
+        /* МОБИЛЬНАЯ ВЕРСИЯ */
+        @media (max-width: 900px) {
+            #monitor { grid-template-columns: 1fr; grid-template-rows: 40px 180px 1fr 60px; display: flex; flex-direction: column; height: 100vh; padding: 5px; border: none; }
+            #status-panel, #target-info { display: none; }
+            #map-panel { height: 150px; flex: none; order: 2; margin-bottom: 5px; }
+            #main-view { order: 3; flex: 1; min-height: 0; }
+            #input-panel { order: 4; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="monitor">
+    <div class="loading-bar" id="load-bar"></div>
+
+    <div id="top-bar">
+        <div class="logo">JANUS<span style="font-size:0.6em">.RPG</span></div>
+        <div class="server-status" id="conn-status">CONNECTING...</div>
+    </div>
+
+    <!-- ЛЕВАЯ ПАНЕЛЬ: СТАТЫ -->
+    <div class="panel" id="status-panel">
+        <div class="panel-header">SHIP STATUS</div>
+        <div class="stat-row">
+            <div class="stat-label"><span>HULL</span> <span id="val-hull">100%</span></div>
+            <div class="bar-bg"><div class="bar-fill" id="bar-hull" style="width:100%"></div></div>
+        </div>
+        <div class="stat-row">
+            <div class="stat-label"><span>ENERGY</span> <span id="val-energy">100%</span></div>
+            <div class="bar-bg"><div class="bar-fill" id="bar-energy" style="width:100%; opacity:0.7"></div></div>
+        </div>
+        <div style="border-top:1px solid var(--primary); padding-top:5px; margin-top:auto;">
+            CREDITS: <span id="val-credits">0</span>
+        </div>
+        <ul class="inv-list" id="inv-list">
+            <li><span>Загрузка...</span></li>
+        </ul>
+    </div>
+
+    <!-- ЦЕНТР: ЛОГ -->
+    <div class="panel" id="main-view">
+        <div id="log-feed">
+            <div class="msg-sys">INITIALIZING VISUAL INTERFACE...</div>
+            <div class="msg-sys">CONNECTING TO JANUS CORE...</div>
+        </div>
+    </div>
+
+    <!-- ПРАВАЯ ПАНЕЛЬ: РАДАР -->
+    <div class="panel" id="map-panel">
+        <div class="panel-header">SECTOR RADAR</div>
+        <canvas id="sector-canvas"></canvas>
+        <div style="position:absolute; bottom:5px; right:5px; font-size:10px; color:var(--primary);" id="loc-name">UNK</div>
+    </div>
+
+    <!-- НИЗ: ВВОД -->
+    <div id="input-panel">
+        <form class="cmd-wrapper" onsubmit="handleForm(event)">
+            <span class="prompt">></span>
+            <input type="text" id="cmd-input" placeholder="Введите команду..." autocomplete="off">
+            <button type="submit" class="send-btn">[SEND]</button>
+        </form>
+    </div>
+
+</div>
+
+<script>
+    // === КОНФИГУРАЦИЯ ===
+    // ВАЖНО: Если сервер не локальный, замените этот URL на ваш Ngrok/публичный IP
+    const API_URL = "http://localhost:5000/api/rpg/action"; 
+    
+    // Получаем ID пользователя из Telegram WebApp (если есть) или генерируем случайный
+    let USER_ID = "pilot_" + Math.floor(Math.random() * 10000);
+    if (window.Telegram && window.Telegram.WebApp) {
+        const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+        if (tgUser) USER_ID = tgUser.id;
+        window.Telegram.WebApp.expand(); // На весь экран
+    }
+
+    // === СОСТОЯНИЕ ИНТЕРФЕЙСА ===
+    const feed = document.getElementById('log-feed');
+    const input = document.getElementById('cmd-input');
+    const loadBar = document.getElementById('load-bar');
+    const statusEl = document.getElementById('conn-status');
+
+    // === ФУНКЦИИ ЛОГИРОВАНИЯ ===
+    function log(msg, type='sys') {
+        const div = document.createElement('div');
+        div.className = `msg-${type}`;
+        div.innerText = msg;
+        feed.appendChild(div);
+        feed.scrollTop = feed.scrollHeight;
+    }
+
+    // === ОБНОВЛЕНИЕ HUD ===
+    function updateHUD(data) {
+        if (!data) return;
+
+        if (data.hp !== undefined) {
+            document.getElementById('bar-hull').style.width = data.hp + "%";
+            document.getElementById('val-hull').innerText = data.hp + "%";
+        }
+        if (data.energy !== undefined) {
+            // Энергия в игре может быть больше 100, но для бара ограничиваем
+            const w = Math.min(100, data.energy); 
+            document.getElementById('bar-energy').style.width = w + "%";
+            document.getElementById('val-energy').innerText = data.energy + "%";
+        }
+        if (data.credits !== undefined) {
+            document.getElementById('val-credits').innerText = data.credits;
+        }
+        if (data.loc) {
+            document.getElementById('loc-name').innerText = data.loc;
+        }
+        
+        if (data.inv) {
+            const list = document.getElementById('inv-list');
+            list.innerHTML = "";
+            if (Array.isArray(data.inv)) {
+                data.inv.forEach(item => {
+                    const li = document.createElement('li');
+                    li.innerText = item;
+                    list.appendChild(li);
+                });
+            }
+        }
+    }
+
+    // === ОТПРАВКА КОМАНД ===
+    async function sendCommand(text) {
+        if (!text) return;
+        
+        log(text, 'user');
+        input.value = '';
+        input.disabled = true;
+        loadBar.style.width = "50%";
+        statusEl.innerText = "TRANSMITTING...";
+
+        try {
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: USER_ID,
+                    message: text
+                })
+            });
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            
+            const data = await res.json();
+            loadBar.style.width = "100%";
+            
+            // Если сервер вернул текст ответа
+            if (data.text) {
+                log(data.text, 'ai');
+            }
+            
+            // Если есть обновления интерфейса
+            if (data.hud_update) {
+                updateHUD(data.hud_update);
+            }
+
+            statusEl.innerText = "ONLINE";
+            statusEl.style.color = "var(--primary)";
+
+        } catch (e) {
+            log(`COMM ERROR: ${e.message}`, 'err');
+            statusEl.innerText = "OFFLINE";
+            statusEl.style.color = "var(--alert)";
+        } finally {
+            input.disabled = false;
+            input.focus();
+            setTimeout(() => { loadBar.style.width = "0%"; }, 200);
+        }
+    }
+
+    function handleForm(e) {
+        e.preventDefault();
+        sendCommand(input.value.trim());
+    }
+
+    // === РАДАР (CANVAS) ===
+    const cvs = document.getElementById('sector-canvas');
+    const ctx = cvs.getContext('2d');
+    
+    function resizeCanvas() {
+        cvs.width = cvs.parentElement.offsetWidth;
+        cvs.height = cvs.parentElement.offsetHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function drawRadar() {
+        ctx.clearRect(0,0,cvs.width,cvs.height);
+        const style = getComputedStyle(document.body);
+        const col = style.getPropertyValue('--primary').trim();
+        const cx = cvs.width/2, cy = cvs.height/2;
+
+        // Сетка
+        ctx.strokeStyle = "rgba(255, 184, 0, 0.2)"; 
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(cx,cy, 30, 0, 7); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx,cy, 60, 0, 7); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,cvs.height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(cvs.width,cy); ctx.stroke();
+
+        // Игрок
+        ctx.fillStyle = '#fff'; 
+        ctx.beginPath(); ctx.arc(cx,cy,2,0,7); ctx.fill();
+
+        // Линия сканирования
+        const angle = (Date.now()/1500) % 6.28;
+        ctx.strokeStyle = col; 
+        ctx.globalAlpha = 0.5;
+        ctx.beginPath(); ctx.moveTo(cx,cy); 
+        ctx.lineTo(cx + Math.cos(angle)*100, cy + Math.sin(angle)*100); 
+        ctx.stroke(); 
+        ctx.globalAlpha = 1;
+
+        requestAnimationFrame(drawRadar);
+    }
+    drawRadar();
+
+    // === АВТОЗАПУСК ===
+    // При старте пробуем пингануть сервер командой "init" (или пустой), 
+    // чтобы получить текущий статус игрока
+    setTimeout(() => {
+        sendCommand("Статус");
+    }, 1000);
+
+</script>
+</body>
+</html>
