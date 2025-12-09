@@ -2,304 +2,213 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>JANUS: INITIUM | TERMINAL</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JANUS: INITIUM</title>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-deep: #0a0a1a;
-            --c-primary: #00ffc4; /* Neon Cyan */
-            --c-janus: #ff6699; /* Neon Magenta */
-            --c-text: #e0e0e0;
-            --glass: rgba(10, 20, 40, 0.7);
-            --border-primary: rgba(0, 255, 196, 0.3);
+            --bg: #0a0a1a;
+            --accent: #00ffcc;
+            --accent2: #ff3399;
+            --text: #e0e0e0;
+            --text-dim: #888;
+            --glass: rgba(15, 25, 50, 0.75);
+            --border: rgba(0, 255, 204, 0.3);
+            --danger: #ff3366;
+            --success: #00ff88;
         }
-
+        * { box-sizing: border-box; }
         body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100vh;
-            background: var(--bg-deep);
-            color: var(--c-text);
+            margin: 0; padding: 0; height: 100vh; width: 100vw;
+            background: var(--bg); color: var(--text);
             font-family: 'Share Tech Mono', monospace;
-            display: flex;
-            overflow: hidden;
+            display: flex; overflow: hidden;
         }
-
-        /* LAYOUT */
         #sidebar {
-            width: 280px;
-            background: var(--glass);
-            border-right: 1px solid var(--border-primary);
-            padding: 20px 15px;
-            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+            width: 320px; background: var(--glass);
+            border-right: 1px solid var(--border); padding: 20px;
+            display: flex; flex-direction: column; gap: 16px;
             overflow-y: auto;
         }
-
-        #main-content {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
+        #main {
+            flex: 1; display: flex; flex-direction: column; padding: 20px;
         }
-
-        /* HEADER */
         .header {
-            font-family: 'Rajdhani', sans-serif;
-            font-weight: 700;
-            font-size: 20px;
-            color: var(--c-primary);
-            margin-bottom: 15px;
-            letter-spacing: 1px;
+            font-family: 'Rajdhani', sans-serif; font-weight: 700;
+            font-size: 22px; color: var(--accent); letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--accent);
         }
-
-        /* LOG/NARRATIVE AREA */
-        #narrative-log {
-            flex-grow: 1;
-            background: rgba(0,0,0,0.4);
-            border: 1px solid var(--border-primary);
-            padding: 15px;
-            margin-bottom: 15px;
-            overflow-y: scroll;
-            line-height: 1.5;
-            white-space: pre-wrap;
-            scroll-behavior: smooth;
-        }
-
-        /* INPUT AREA */
-        #command-input-container {
-            display: flex;
-            border: 1px solid var(--c-primary);
-            background: rgba(0,0,0,0.5);
-        }
-        #command-prefix {
-            padding: 10px;
-            color: var(--c-janus);
-            font-weight: bold;
-        }
-        #command-input {
-            flex-grow: 1;
-            border: none;
-            background: transparent;
-            color: var(--c-text);
-            padding: 10px;
-            font-family: inherit;
-            font-size: 14px;
-            outline: none;
-        }
-
-        /* HUD STYLES */
         .hud-block {
-            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+            border-radius: 8px; padding: 12px; font-size: 13px;
+        }
+        .hud-title {
+            color: var(--accent); font-weight: bold; margin-bottom: 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .value { color: white; font-weight: bold; }
+        .danger { color: var(--danger); }
+        .success { color: var(--success); }
+        #log {
+            flex: 1; background: rgba(0,0,0,0.5); border: 1px solid var(--border);
+            padding: 16px; margin: 16px 0; overflow-y: auto;
+            line-height: 1.6; font-size: 14px; white-space: pre-wrap;
             border-radius: 8px;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.3);
-            margin-top: 10px;
         }
-        .hud-label {
-            color: var(--c-primary);
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-            display: flex;
-            justify-content: space-between;
+        #input-area {
+            display: flex; border: 1px solid var(--accent); border-radius: 8px; overflow: hidden;
         }
-        .stat-value {
-            font-size: 16px;
-            font-weight: 700;
+        #prefix { background: var(--accent); color: #000; padding: 12px 16px; font-weight: bold; }
+        #input { flex: 1; background: transparent; border: none; color: white; padding: 12px; font-size: 15px; outline: none; }
+        .quick-btn {
+            background: rgba(255,255,255,0.1); color: var(--accent); border: 1px solid var(--border);
+            padding: 8px 12px; margin: 4px 2px; border-radius: 4px; cursor: pointer; font-size: 12px;
+            transition: all 0.2s;
         }
-        .skill-item {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: #aaa;
-            padding: 3px 0;
-            border-bottom: 1px dotted rgba(255,255,255,0.1);
-        }
-        .skill-value {
-            color: var(--c-primary);
-        }
-
-        /* UTILITY BUTTONS */
-        .util-btn {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            margin-top: 10px;
-            background: var(--c-primary);
-            color: #000;
-            border: none;
-            font-family: 'Rajdhani', sans-serif;
-            font-weight: 700;
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-        .util-btn:hover {
-            background: #fff;
-        }
+        .quick-btn:hover { background: var(--accent); color: #000; }
+        .typing { color: var(--accent2); }
+        .system { color: var(--accent); font-weight: bold; }
+        .death { color: var(--danger); animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
 <body>
-
     <div id="sidebar">
-        <div class="header">STATUS MONITOR</div>
+        <div class="header">JANUS: INITIUM</div>
 
-        <div id="hud-stats">
-            <div class="hud-block">
-                <div class="hud-label">Имя: <span id="p-name">--</span></div>
-                <div class="stat-value" id="p-class">--</div>
-            </div>
-            
-            <div class="hud-block">
-                <div class="hud-label">Здоровье / Уровень: <span id="p-hp">--</span></div>
-                <div class="stat-value" id="p-lvl">--</div>
-            </div>
-
-            <div class="hud-block">
-                <div class="hud-label">Кредиты:</div>
-                <div class="stat-value" id="p-credits">100 CR</div>
-            </div>
-
-            <div class="hud-block">
-                <div class="hud-label">Локация:</div>
-                <div class="stat-value" id="p-loc">Station Initium</div>
-            </div>
-
-            <div class="hud-block" id="skills-container">
-                <div class="hud-label">Навыки (Skills)</div>
-                <div id="p-skills">
-                    </div>
-            </div>
+        <div class="hud-block">
+            <div class="hud-title">ПЕРСОНА</div>
+            <div>Имя: <span id="name" class="value">—</span></div>
+            <div>Класс: <span id="class" class="value">—</span></div>
+            <div>Уровень: <span id="lvl" class="value">1</span></div>
         </div>
 
-        <a id="inaihr-link" href="#" target="_blank" class="util-btn" style="background: var(--c-janus);">iNaiHR (ЗЕРКАЛО ДУШИ)</a>
+        <div class="hud-block">
+            <div class="hud-title">СТАТУС</div>
+            <div>HP: <span id="hp" class="value">100</span>/100</div>
+            <div>Кредиты: <span id="credits" class="value">100</span> CR</div>
+            <div>XP: <span id="xp" class="value">0</span></div>
+        </div>
+
+        <div class="hud-block">
+            <div class="hud-title">ЛОКАЦИЯ</div>
+            <div id="location" class="value">Station Initium</div>
+        </div>
+
+        <div class="hud-block">
+            <div class="hud-title">ИНВЕНТАРЬ</div>
+            <div id="inventory">PDA, Ration</div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <div class="quick-btn" onclick="send('осмотреться')">ОСМОТРЕТЬСЯ</div>
+            <div class="quick-btn" onclick="send('статус')">СТАТУС</div>
+            <div class="quick-btn" onclick="send('инвентарь')">ИНВЕНТАРЬ</div>
+            <div class="quick-btn" onclick="send('помощь')">ПОМОЩЬ</div>
+            <div class="quick-btn danger" onclick="send('WIPE PROTOCOL')" style="margin-top: 12px;">WIPE PROTOCOL</div>
+        </div>
     </div>
 
-    <div id="main-content">
-        <div class="header">JANUS TERMINAL</div>
-        
-        <div id="narrative-log">
-            [INIT: 00:00:01] 🌐 Связь установлена. Ожидаю ввода команды...
-            <br>
-        </div>
+    <div id="main">
+        <div class="header">ТЕРМИНАЛ</div>
+        <div id="log">[SYSTEM] JANUS: INITIUM загружен. Ожидание идентификации...</div>
 
-        <div id="command-input-container">
-            <span id="command-prefix">>></span>
-            <input type="text" id="command-input" placeholder="Введите команду или действие..." autofocus>
+        <div id="input-area">
+            <div id="prefix">></div>
+            <input type="text" id="input" placeholder="Введите имя и класс, например: Рипли Наемник" autofocus>
         </div>
     </div>
 
 <script>
-    // === CONFIGURATION ===
-    // Твой Ngrok адрес (Мост к Python Ядру)
-    const API_BASE = "https://supperless-yoshiko-noneruditely.ngrok-free.dev"; 
-    
-    // Временно используем фиксированный ID, пока нет системы входа через Telegram
-    const USER_ID = '392910542'; 
+    // НАСТРОЙКИ — ПОМЕНЯЙ ТОЛЬКО ЭТУ СТРОКУ
+    const API_BASE = "https://твой-ngrok-адрес.ngrok-free.app"; // ← ВСТАВЬ СВОЙ!
+    const USER_ID = "392910542"; // можно менять под разных игроков
 
-    // === ELEMENTS ===
-    const logElement = document.getElementById('narrative-log');
-    const inputElement = document.getElementById('command-input');
-    const inaihrLink = document.getElementById('inaihr-link');
+    const log = document.getElementById('log');
+    const input = document.getElementById('input');
 
-    // Настройка ссылки на iNaiHR (открывается в новом окне)
-    inaihrLink.href = 'https://github.com/Hawkar-usls/iNaiHR-Janus-'; 
-
-    // === EVENT LISTENER ===
-    inputElement.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            const command = inputElement.value.trim();
-            if (command) {
-                displayUserCommand(command);
-                sendAction(command);
-                inputElement.value = '';
-            }
-        }
-    });
-
-    // === DISPLAY FUNCTIONS ===
-    function displayUserCommand(command) {
-        logElement.innerHTML += `<span style="color:var(--c-primary);">> ${command}</span>\n`;
-        logElement.scrollTop = logElement.scrollHeight;
+    function addLine(text, className = '') {
+        const line = document.createElement('div');
+        line.innerHTML = text;
+        if (className) line.className = className;
+        log.appendChild(line);
+        log.scrollTop = log.scrollHeight;
     }
 
-    function displayNarrative(text) {
-        // Замена Newline на <br> для корректного отображения в HTML, сохраняя pre-wrap
-        const formattedText = text.replace(/\n/g, '<br>');
-        logElement.innerHTML += `<span style="color:var(--c-text);">${formattedText}</span><br>`;
-        logElement.scrollTop = logElement.scrollHeight;
+    function typeText(text, callback) {
+        let i = 0;
+        const line = document.createElement('div');
+        line.className = 'typing';
+        log.appendChild(line);
+        log.scrollTop = log.scrollHeight;
+
+        const timer = setInterval(() => {
+            if (i < text.length) {
+                line.textContent += text.charAt(i);
+                i++;
+                log.scrollTop = log.scrollHeight;
+            } 
+            else {
+                clearInterval(timer);
+                line.className = '';
+                if (callback) callback();
+            }
+        }, 20);
     }
 
     function updateHUD(data) {
-        document.getElementById('p-name').innerText = data.name || '--';
-        document.getElementById('p-class').innerText = data.class || 'Drifter';
-        document.getElementById('p-lvl').innerText = `Lvl ${data.lvl || 1}`;
-        document.getElementById('p-hp').innerText = `HP: ${data.hp || 100}/100`;
-        document.getElementById('p-credits').innerText = `${data.credits || 100} CR`;
-        document.getElementById('p-loc').innerText = data.loc || 'Unknown Sector';
-
-        // Update Skills (Dynamic List)
-        const skillsContainer = document.getElementById('p-skills');
-        skillsContainer.innerHTML = '';
-        const skills = data.skills || {};
-        const skillKeys = Object.keys(skills).sort();
-
-        if (skillKeys.length > 0) {
-            skillKeys.forEach(key => {
-                const item = document.createElement('div');
-                item.className = 'skill-item';
-                item.innerHTML = `<span>${key}:</span> <span class="skill-value">${skills[key]}</span>`;
-                skillsContainer.appendChild(item);
-            });
-        } else {
-            skillsContainer.innerHTML = `<div style="font-size:12px; color:#555;">Нет развитых навыков.</div>`;
-        }
+        if (data.name) document.getElementById('name').textContent = data.name;
+        if (data.class) document.getElementById('class').textContent = data.class;
+        document.getElementById('lvl').textContent = data.lvl || 1;
+        document.getElementById('hp').textContent = data.hp || 100;
+        document.getElementById('credits').textContent = data.credits || 0;
+        document.getElementById('xp').textContent = data.xp || 0;
+        document.getElementById('location').textContent = data.loc || 'Station Initium';
+        const inv = data.inv || [];
+        document.getElementById('inventory').innerHTML = inv.length ? inv.join(', ') : '<span style="color:#555">Пусто</span>';
     }
 
-    // === API LOGIC ===
-    async function sendAction(message) {
+    async function send(message) {
+        if (!message.trim()) return;
+        const cmd = message.trim();
+        addLine(`> ${cmd}`, 'system');
+        input.value = '';
+        input.disabled = true;
+
         try {
             const res = await fetch(`${API_BASE}/api/rpg/action`, {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': 'true' // Bypass Ngrok warning in development
-                },
-                body: JSON.stringify({ user_id: USER_ID, message: message })
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                body: JSON.stringify({ user_id: USER_ID, message: cmd })
             });
 
-            if (!res.ok) {
-                const errorText = await res.text();
-                throw new Error(`Server responded with ${res.status}: ${errorText}`);
-            }
-
             const data = await res.json();
-            
-            // Output Narrative
-            displayNarrative(data.text || "[SYSTEM] Received null narrative.");
 
-            // Update HUD if data is present
-            if (data.hud_update) {
-                // Merging player name/class from potential creation steps
-                data.hud_update.name = data.hud_update.name || document.getElementById('p-name').innerText;
-                data.hud_update.class = data.hud_update.class || document.getElementById('p-class').innerText;
-                
-                updateHUD(data.hud_update);
+            if (data.text) {
+                if (data.text.includes('[СМЕРТЬ]')) {
+                    addLine(data.text, 'death');
+                } else if (data.text.includes('[LEVEL UP]')) {
+                    addLine(data.text, 'success');
+                } else {
+                    typeText(data.text);
+                }
             }
 
-        } catch (error) {
-            displayNarrative(`[ERROR] Connection failed: ${error.message}`);
+            if (data.hud_update) updateHUD(data.hud_update);
+
+        } catch (e) {
+            addLine(`[ОШИБКА СВЯЗИ] ${e.message}`, 'danger');
+        } finally {
+            input.disabled = false;
+            input.focus();
         }
     }
 
-    // Initial load command to get starting state (e.g., gender prompt)
-    sendAction('INITIALIZE'); 
+    function quickSend(text) { send(text); }
 
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') send(input.value); });
+
+    // Автостарт
+    setTimeout(() => send(''), 500);
 </script>
 </body>
 </html>
