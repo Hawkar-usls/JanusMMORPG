@@ -2,320 +2,303 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JANUS // GALACTIC TERMINAL</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>JANUS: INITIUM | TERMINAL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-
         :root {
-            --primary: #ffb800; /* Янтарный цвет Fallout */
-            --secondary: rgba(255, 184, 0, 0.7);
-            --bg: #050505;
-            --glass: rgba(255, 184, 0, 0.1);
-            --alert: #ff3333;
+            --bg-deep: #0a0a1a;
+            --c-primary: #00ffc4; /* Neon Cyan */
+            --c-janus: #ff6699; /* Neon Magenta */
+            --c-text: #e0e0e0;
+            --glass: rgba(10, 20, 40, 0.7);
+            --border-primary: rgba(0, 255, 196, 0.3);
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
         body {
-            margin: 0; padding: 0; background: #000; color: var(--primary);
-            font-family: 'Share Tech Mono', monospace; height: 100vh;
-            overflow: hidden; display: flex; justify-content: center; align-items: center;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100vh;
+            background: var(--bg-deep);
+            color: var(--c-text);
+            font-family: 'Share Tech Mono', monospace;
+            display: flex;
+            overflow: hidden;
         }
 
-        /* === КОРПУС ТЕРМИНАЛА === */
-        #monitor {
-            width: 100vw; height: 100vh; background: var(--bg);
-            border: 2px solid var(--secondary);
-            box-shadow: inset 0 0 80px rgba(0,0,0,0.9);
-            position: relative; overflow: hidden; display: grid;
-            grid-template-columns: 220px 1fr 220px;
-            grid-template-rows: 50px 1fr 100px; 
-            grid-gap: 10px; padding: 10px;
+        /* LAYOUT */
+        #sidebar {
+            width: 280px;
+            background: var(--glass);
+            border-right: 1px solid var(--border-primary);
+            padding: 20px 15px;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
         }
 
-        /* Эффект старого ЭЛТ монитора */
-        #monitor::before {
-            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 100; background-size: 100% 2px, 3px 100%; pointer-events: none;
+        #main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
         }
 
-        .panel { border: 1px solid var(--primary); background: var(--glass); padding: 10px; position: relative; display: flex; flex-direction: column; }
-        .panel-header { position: absolute; top: -9px; left: 8px; background: var(--bg); padding: 0 4px; color: var(--primary); font-size: 11px; font-weight: bold; border: 1px solid var(--primary); }
+        /* HEADER */
+        .header {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--c-primary);
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
 
-        /* ВЕРХНЯЯ ПАНЕЛЬ */
-        #top-bar { grid-column: 1 / 4; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--secondary); padding-bottom: 5px; }
-        .logo { font-size: 22px; font-weight: bold; letter-spacing: 4px; text-shadow: 0 0 10px var(--primary); }
-        .server-status { font-size: 10px; color: var(--secondary); animation: blink 2s infinite; }
+        /* LOG/NARRATIVE AREA */
+        #narrative-log {
+            flex-grow: 1;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border-primary);
+            padding: 15px;
+            margin-bottom: 15px;
+            overflow-y: scroll;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            scroll-behavior: smooth;
+        }
 
-        /* ЛЕВАЯ ПАНЕЛЬ: СТАТУС */
-        #status-panel { grid-row: 2 / 4; grid-column: 1 / 2; }
-        .stat-row { margin-bottom: 12px; }
-        .stat-label { font-size: 11px; display: flex; justify-content: space-between; margin-bottom: 3px; }
-        .bar-bg { width: 100%; height: 8px; background: rgba(0,0,0,0.6); border: 1px solid var(--primary); }
-        .bar-fill { height: 100%; background: var(--primary); box-shadow: 0 0 8px var(--primary); transition: width 0.5s ease-out; }
-        .inv-list { list-style: none; padding: 0; font-size: 11px; margin-top: 15px; flex: 1; overflow-y: auto; }
-        .inv-list li { padding: 4px 0; border-bottom: 1px dashed var(--glass); display: flex; justify-content: space-between; }
+        /* INPUT AREA */
+        #command-input-container {
+            display: flex;
+            border: 1px solid var(--c-primary);
+            background: rgba(0,0,0,0.5);
+        }
+        #command-prefix {
+            padding: 10px;
+            color: var(--c-janus);
+            font-weight: bold;
+        }
+        #command-input {
+            flex-grow: 1;
+            border: none;
+            background: transparent;
+            color: var(--c-text);
+            padding: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+        }
 
-        /* ПРАВАЯ ПАНЕЛЬ: РАДАР */
-        #map-panel { grid-row: 2 / 3; grid-column: 3 / 4; position: relative; }
-        #sector-canvas { width: 100%; height: 100%; }
-        #target-info { grid-row: 3 / 4; grid-column: 3 / 4; font-size: 11px; }
-        .t-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        /* HUD STYLES */
+        .hud-block {
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            margin-top: 10px;
+        }
+        .hud-label {
+            color: var(--c-primary);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .stat-value {
+            font-size: 16px;
+            font-weight: 700;
+        }
+        .skill-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #aaa;
+            padding: 3px 0;
+            border-bottom: 1px dotted rgba(255,255,255,0.1);
+        }
+        .skill-value {
+            color: var(--c-primary);
+        }
 
-        /* ЦЕНТР: ЛОГ */
-        #main-view { grid-column: 2 / 3; grid-row: 2 / 3; border: none; background: transparent; }
-        #log-feed { flex: 1; overflow-y: auto; font-size: 14px; line-height: 1.5; text-shadow: 0 0 2px var(--primary); padding-right: 5px; }
-        #log-feed::-webkit-scrollbar { width: 4px; background: #000; }
-        #log-feed::-webkit-scrollbar-thumb { background: var(--primary); }
-
-        .msg-sys { color: var(--secondary); font-size: 12px; margin-top: 10px; font-style: italic; opacity: 0.8; }
-        .msg-ai { color: var(--primary); margin-bottom: 12px; border-left: 2px solid var(--secondary); padding-left: 10px; white-space: pre-wrap; }
-        .msg-user { color: #fff; text-align: right; margin: 8px 0; opacity: 0.9; font-style: italic; border-right: 2px solid var(--primary); padding-right: 10px; }
-        .msg-err { color: var(--alert); border: 1px dashed var(--alert); padding: 5px; margin-top: 5px; }
-
-        /* ВВОД КОМАНД */
-        #input-panel { grid-column: 2 / 3; grid-row: 3 / 4; display: flex; flex-direction: column; justify-content: flex-end; border: none; background: transparent; }
-        .cmd-wrapper { display: flex; align-items: center; background: rgba(0,0,0,0.8); border: 1px solid var(--primary); padding: 8px; }
-        .prompt { margin-right: 8px; font-weight: bold; animation: blink 1.5s infinite; }
-        input { flex: 1; background: transparent; border: none; color: #fff; font-family: inherit; font-size: 16px; outline: none; }
-        .send-btn { background: var(--primary); color: #000; border: none; font-weight: bold; cursor: pointer; padding: 4px 10px; margin-left: 5px; font-family: inherit; }
-        
-        .loading-bar { height: 2px; width: 0%; background: var(--primary); transition: width 0.2s; margin-top: -2px; position:absolute; top:0; left:0; z-index: 101; }
-
-        @keyframes blink { 50% { opacity: 0.3; } }
-
-        /* МОБИЛЬНАЯ ВЕРСИЯ */
-        @media (max-width: 900px) {
-            #monitor { grid-template-columns: 1fr; grid-template-rows: 40px 180px 1fr 60px; display: flex; flex-direction: column; height: 100vh; padding: 5px; border: none; }
-            #status-panel, #target-info { display: none; }
-            #map-panel { height: 150px; flex: none; order: 2; margin-bottom: 5px; }
-            #main-view { order: 3; flex: 1; min-height: 0; }
-            #input-panel { order: 4; }
+        /* UTILITY BUTTONS */
+        .util-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background: var(--c-primary);
+            color: #000;
+            border: none;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        .util-btn:hover {
+            background: #fff;
         }
     </style>
 </head>
 <body>
 
-<div id="monitor">
-    <div class="loading-bar" id="load-bar"></div>
+    <div id="sidebar">
+        <div class="header">STATUS MONITOR</div>
 
-    <div id="top-bar">
-        <div class="logo">JANUS<span style="font-size:0.6em">.RPG</span></div>
-        <div class="server-status" id="conn-status">CONNECTING...</div>
-    </div>
+        <div id="hud-stats">
+            <div class="hud-block">
+                <div class="hud-label">Имя: <span id="p-name">--</span></div>
+                <div class="stat-value" id="p-class">--</div>
+            </div>
+            
+            <div class="hud-block">
+                <div class="hud-label">Здоровье / Уровень: <span id="p-hp">--</span></div>
+                <div class="stat-value" id="p-lvl">--</div>
+            </div>
 
-    <!-- ЛЕВАЯ ПАНЕЛЬ: СТАТЫ -->
-    <div class="panel" id="status-panel">
-        <div class="panel-header">SHIP STATUS</div>
-        <div class="stat-row">
-            <div class="stat-label"><span>HULL</span> <span id="val-hull">100%</span></div>
-            <div class="bar-bg"><div class="bar-fill" id="bar-hull" style="width:100%"></div></div>
+            <div class="hud-block">
+                <div class="hud-label">Кредиты:</div>
+                <div class="stat-value" id="p-credits">100 CR</div>
+            </div>
+
+            <div class="hud-block">
+                <div class="hud-label">Локация:</div>
+                <div class="stat-value" id="p-loc">Station Initium</div>
+            </div>
+
+            <div class="hud-block" id="skills-container">
+                <div class="hud-label">Навыки (Skills)</div>
+                <div id="p-skills">
+                    </div>
+            </div>
         </div>
-        <div class="stat-row">
-            <div class="stat-label"><span>ENERGY</span> <span id="val-energy">100%</span></div>
-            <div class="bar-bg"><div class="bar-fill" id="bar-energy" style="width:100%; opacity:0.7"></div></div>
-        </div>
-        <div style="border-top:1px solid var(--primary); padding-top:5px; margin-top:auto;">
-            CREDITS: <span id="val-credits">0</span>
-        </div>
-        <ul class="inv-list" id="inv-list">
-            <li><span>Загрузка...</span></li>
-        </ul>
+
+        <a id="inaihr-link" href="#" target="_blank" class="util-btn" style="background: var(--c-janus);">iNaiHR (ЗЕРКАЛО ДУШИ)</a>
     </div>
 
-    <!-- ЦЕНТР: ЛОГ -->
-    <div class="panel" id="main-view">
-        <div id="log-feed">
-            <div class="msg-sys">INITIALIZING VISUAL INTERFACE...</div>
-            <div class="msg-sys">CONNECTING TO JANUS CORE...</div>
+    <div id="main-content">
+        <div class="header">JANUS TERMINAL</div>
+        
+        <div id="narrative-log">
+            [INIT: 00:00:01] 🌐 Связь установлена. Ожидаю ввода команды...
+            <br>
+        </div>
+
+        <div id="command-input-container">
+            <span id="command-prefix">>></span>
+            <input type="text" id="command-input" placeholder="Введите команду или действие..." autofocus>
         </div>
     </div>
-
-    <!-- ПРАВАЯ ПАНЕЛЬ: РАДАР -->
-    <div class="panel" id="map-panel">
-        <div class="panel-header">SECTOR RADAR</div>
-        <canvas id="sector-canvas"></canvas>
-        <div style="position:absolute; bottom:5px; right:5px; font-size:10px; color:var(--primary);" id="loc-name">UNK</div>
-    </div>
-
-    <!-- НИЗ: ВВОД -->
-    <div id="input-panel">
-        <form class="cmd-wrapper" onsubmit="handleForm(event)">
-            <span class="prompt">></span>
-            <input type="text" id="cmd-input" placeholder="Введите команду..." autocomplete="off">
-            <button type="submit" class="send-btn">[SEND]</button>
-        </form>
-    </div>
-
-</div>
 
 <script>
-    // === КОНФИГУРАЦИЯ ===
-    // ВАЖНО: Если сервер не локальный, замените этот URL на ваш Ngrok/публичный IP
-    const API_URL = "http://localhost:5000/api/rpg/action"; 
+    // === CONFIGURATION ===
+    // Твой Ngrok адрес (Мост к Python Ядру)
+    const API_BASE = "https://supperless-yoshiko-noneruditely.ngrok-free.dev"; 
     
-    // Получаем ID пользователя из Telegram WebApp (если есть) или генерируем случайный
-    let USER_ID = "pilot_" + Math.floor(Math.random() * 10000);
-    if (window.Telegram && window.Telegram.WebApp) {
-        const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
-        if (tgUser) USER_ID = tgUser.id;
-        window.Telegram.WebApp.expand(); // На весь экран
-    }
+    // Временно используем фиксированный ID, пока нет системы входа через Telegram
+    const USER_ID = '392910542'; 
 
-    // === СОСТОЯНИЕ ИНТЕРФЕЙСА ===
-    const feed = document.getElementById('log-feed');
-    const input = document.getElementById('cmd-input');
-    const loadBar = document.getElementById('load-bar');
-    const statusEl = document.getElementById('conn-status');
+    // === ELEMENTS ===
+    const logElement = document.getElementById('narrative-log');
+    const inputElement = document.getElementById('command-input');
+    const inaihrLink = document.getElementById('inaihr-link');
 
-    // === ФУНКЦИИ ЛОГИРОВАНИЯ ===
-    function log(msg, type='sys') {
-        const div = document.createElement('div');
-        div.className = `msg-${type}`;
-        div.innerText = msg;
-        feed.appendChild(div);
-        feed.scrollTop = feed.scrollHeight;
-    }
+    // Настройка ссылки на iNaiHR (открывается в новом окне)
+    inaihrLink.href = 'https://github.com/Hawkar-usls/iNaiHR-Janus-'; 
 
-    // === ОБНОВЛЕНИЕ HUD ===
-    function updateHUD(data) {
-        if (!data) return;
-
-        if (data.hp !== undefined) {
-            document.getElementById('bar-hull').style.width = data.hp + "%";
-            document.getElementById('val-hull').innerText = data.hp + "%";
-        }
-        if (data.energy !== undefined) {
-            // Энергия в игре может быть больше 100, но для бара ограничиваем
-            const w = Math.min(100, data.energy); 
-            document.getElementById('bar-energy').style.width = w + "%";
-            document.getElementById('val-energy').innerText = data.energy + "%";
-        }
-        if (data.credits !== undefined) {
-            document.getElementById('val-credits').innerText = data.credits;
-        }
-        if (data.loc) {
-            document.getElementById('loc-name').innerText = data.loc;
-        }
-        
-        if (data.inv) {
-            const list = document.getElementById('inv-list');
-            list.innerHTML = "";
-            if (Array.isArray(data.inv)) {
-                data.inv.forEach(item => {
-                    const li = document.createElement('li');
-                    li.innerText = item;
-                    list.appendChild(li);
-                });
+    // === EVENT LISTENER ===
+    inputElement.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const command = inputElement.value.trim();
+            if (command) {
+                displayUserCommand(command);
+                sendAction(command);
+                inputElement.value = '';
             }
         }
+    });
+
+    // === DISPLAY FUNCTIONS ===
+    function displayUserCommand(command) {
+        logElement.innerHTML += `<span style="color:var(--c-primary);">> ${command}</span>\n`;
+        logElement.scrollTop = logElement.scrollHeight;
     }
 
-    // === ОТПРАВКА КОМАНД ===
-    async function sendCommand(text) {
-        if (!text) return;
-        
-        log(text, 'user');
-        input.value = '';
-        input.disabled = true;
-        loadBar.style.width = "50%";
-        statusEl.innerText = "TRANSMITTING...";
+    function displayNarrative(text) {
+        // Замена Newline на <br> для корректного отображения в HTML, сохраняя pre-wrap
+        const formattedText = text.replace(/\n/g, '<br>');
+        logElement.innerHTML += `<span style="color:var(--c-text);">${formattedText}</span><br>`;
+        logElement.scrollTop = logElement.scrollHeight;
+    }
 
+    function updateHUD(data) {
+        document.getElementById('p-name').innerText = data.name || '--';
+        document.getElementById('p-class').innerText = data.class || 'Drifter';
+        document.getElementById('p-lvl').innerText = `Lvl ${data.lvl || 1}`;
+        document.getElementById('p-hp').innerText = `HP: ${data.hp || 100}/100`;
+        document.getElementById('p-credits').innerText = `${data.credits || 100} CR`;
+        document.getElementById('p-loc').innerText = data.loc || 'Unknown Sector';
+
+        // Update Skills (Dynamic List)
+        const skillsContainer = document.getElementById('p-skills');
+        skillsContainer.innerHTML = '';
+        const skills = data.skills || {};
+        const skillKeys = Object.keys(skills).sort();
+
+        if (skillKeys.length > 0) {
+            skillKeys.forEach(key => {
+                const item = document.createElement('div');
+                item.className = 'skill-item';
+                item.innerHTML = `<span>${key}:</span> <span class="skill-value">${skills[key]}</span>`;
+                skillsContainer.appendChild(item);
+            });
+        } else {
+            skillsContainer.innerHTML = `<div style="font-size:12px; color:#555;">Нет развитых навыков.</div>`;
+        }
+    }
+
+    // === API LOGIC ===
+    async function sendAction(message) {
         try {
-            const res = await fetch(API_URL, {
+            const res = await fetch(`${API_BASE}/api/rpg/action`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: USER_ID,
-                    message: text
-                })
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true' // Bypass Ngrok warning in development
+                },
+                body: JSON.stringify({ user_id: USER_ID, message: message })
             });
 
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            
-            const data = await res.json();
-            loadBar.style.width = "100%";
-            
-            // Если сервер вернул текст ответа
-            if (data.text) {
-                log(data.text, 'ai');
+            if (!res.ok) {
+                const errorText = await res.text();
+                throw new Error(`Server responded with ${res.status}: ${errorText}`);
             }
+
+            const data = await res.json();
             
-            // Если есть обновления интерфейса
+            // Output Narrative
+            displayNarrative(data.text || "[SYSTEM] Received null narrative.");
+
+            // Update HUD if data is present
             if (data.hud_update) {
+                // Merging player name/class from potential creation steps
+                data.hud_update.name = data.hud_update.name || document.getElementById('p-name').innerText;
+                data.hud_update.class = data.hud_update.class || document.getElementById('p-class').innerText;
+                
                 updateHUD(data.hud_update);
             }
 
-            statusEl.innerText = "ONLINE";
-            statusEl.style.color = "var(--primary)";
-
-        } catch (e) {
-            log(`COMM ERROR: ${e.message}`, 'err');
-            statusEl.innerText = "OFFLINE";
-            statusEl.style.color = "var(--alert)";
-        } finally {
-            input.disabled = false;
-            input.focus();
-            setTimeout(() => { loadBar.style.width = "0%"; }, 200);
+        } catch (error) {
+            displayNarrative(`[ERROR] Connection failed: ${error.message}`);
         }
     }
 
-    function handleForm(e) {
-        e.preventDefault();
-        sendCommand(input.value.trim());
-    }
-
-    // === РАДАР (CANVAS) ===
-    const cvs = document.getElementById('sector-canvas');
-    const ctx = cvs.getContext('2d');
-    
-    function resizeCanvas() {
-        cvs.width = cvs.parentElement.offsetWidth;
-        cvs.height = cvs.parentElement.offsetHeight;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    function drawRadar() {
-        ctx.clearRect(0,0,cvs.width,cvs.height);
-        const style = getComputedStyle(document.body);
-        const col = style.getPropertyValue('--primary').trim();
-        const cx = cvs.width/2, cy = cvs.height/2;
-
-        // Сетка
-        ctx.strokeStyle = "rgba(255, 184, 0, 0.2)"; 
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.arc(cx,cy, 30, 0, 7); ctx.stroke();
-        ctx.beginPath(); ctx.arc(cx,cy, 60, 0, 7); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,cvs.height); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(cvs.width,cy); ctx.stroke();
-
-        // Игрок
-        ctx.fillStyle = '#fff'; 
-        ctx.beginPath(); ctx.arc(cx,cy,2,0,7); ctx.fill();
-
-        // Линия сканирования
-        const angle = (Date.now()/1500) % 6.28;
-        ctx.strokeStyle = col; 
-        ctx.globalAlpha = 0.5;
-        ctx.beginPath(); ctx.moveTo(cx,cy); 
-        ctx.lineTo(cx + Math.cos(angle)*100, cy + Math.sin(angle)*100); 
-        ctx.stroke(); 
-        ctx.globalAlpha = 1;
-
-        requestAnimationFrame(drawRadar);
-    }
-    drawRadar();
-
-    // === АВТОЗАПУСК ===
-    // При старте пробуем пингануть сервер командой "init" (или пустой), 
-    // чтобы получить текущий статус игрока
-    setTimeout(() => {
-        sendCommand("Статус");
-    }, 1000);
+    // Initial load command to get starting state (e.g., gender prompt)
+    sendAction('INITIALIZE'); 
 
 </script>
 </body>
