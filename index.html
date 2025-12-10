@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>JANUS: SANDBOX</title>
+    <title>JANUS: INITIUM CHRONICLES</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -20,216 +21,98 @@
             
             --border-color: rgba(0, 255, 200, 0.2);
             --glow: 0 0 10px rgba(0, 255, 200, 0.15);
-            
-            --scanline-color: rgba(0, 0, 0, 0.5);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             margin: 0; padding: 0;
-            width: 100vw; height: 100dvh; /* Dynamic Height for iOS */
+            width: 100vw; height: 100dvh;
             background-color: var(--bg-color);
             color: var(--text-main);
             font-family: 'JetBrains Mono', monospace;
             display: flex;
             overflow: hidden;
-            background-image: 
-                radial-gradient(circle at 50% 50%, #0a1520 0%, #000 100%);
+            background-image: radial-gradient(circle at 50% 50%, #0a1520 0%, #000 100%);
         }
 
-        /* --- CRT EFFECT OVERLAY --- */
+        /* CRT SCANLINE */
         body::after {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 999;
-            background-size: 100% 2px, 3px 100%;
-            pointer-events: none;
+            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 999; background-size: 100% 2px, 3px 100%; pointer-events: none;
         }
 
-        /* --- LAYOUT CONTAINER --- */
-        #app-container {
-            display: flex;
-            width: 100%; height: 100%;
-            flex-direction: row; /* Desktop: Side-by-side */
-        }
+        #app-container { display: flex; width: 100%; height: 100%; flex-direction: row; }
 
-        /* --- LEFT SIDEBAR (HUD) --- */
+        /* --- HUD (LEFT) --- */
         #hud {
-            width: 320px;
-            background: var(--hud-bg);
-            border-right: 1px solid var(--border-color);
-            padding: 15px;
-            display: flex; flex-direction: column; gap: 12px;
-            overflow-y: auto;
-            backdrop-filter: blur(10px);
-            z-index: 10;
-            flex-shrink: 0;
-            transition: all 0.3s ease;
+            width: 320px; background: var(--hud-bg); border-right: 1px solid var(--border-color);
+            padding: 15px; display: flex; flex-direction: column; gap: 12px;
+            overflow-y: auto; backdrop-filter: blur(10px); z-index: 10; flex-shrink: 0;
         }
 
         .hud-panel {
-            border: 1px solid var(--border-color);
-            background: rgba(0, 255, 200, 0.02);
-            padding: 10px;
-            position: relative;
+            border: 1px solid var(--border-color); background: rgba(0, 255, 200, 0.02);
+            padding: 10px; position: relative;
         }
-        
-        /* Декоративные уголки */
-        .hud-panel::before {
-            content: ''; position: absolute; top: -1px; left: -1px;
-            width: 8px; height: 8px; border-top: 2px solid var(--primary); border-left: 2px solid var(--primary);
-        }
-        .hud-panel::after {
-            content: ''; position: absolute; bottom: -1px; right: -1px;
-            width: 8px; height: 8px; border-bottom: 2px solid var(--primary); border-right: 2px solid var(--primary);
-        }
+        .hud-panel::before { content: ''; position: absolute; top: -1px; left: -1px; width: 8px; height: 8px; border-top: 2px solid var(--primary); border-left: 2px solid var(--primary); }
+        .hud-panel::after { content: ''; position: absolute; bottom: -1px; right: -1px; width: 8px; height: 8px; border-bottom: 2px solid var(--primary); border-right: 2px solid var(--primary); }
 
         .hud-label {
-            font-family: 'Rajdhani', sans-serif;
-            font-weight: 700; font-size: 14px;
-            color: var(--primary); letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-bottom: 8px; border-bottom: 1px dashed var(--border-color);
-            padding-bottom: 4px;
+            font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px;
+            color: var(--primary); letter-spacing: 2px; text-transform: uppercase;
+            margin-bottom: 8px; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px;
         }
 
-        .stat-row {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 4px; font-size: 13px;
-        }
+        .stat-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 13px; }
         .stat-val { color: #fff; font-weight: 700; text-shadow: var(--glow); }
 
-        /* Progress Bars */
-        .bar-container {
-            height: 4px; background: #111; margin-top: 2px; width: 100%; position: relative;
-        }
-        .bar-fill {
-            height: 100%; background: var(--primary); width: 100%;
-            box-shadow: 0 0 5px var(--primary);
-            transition: width 0.5s ease;
-        }
+        .bar-container { height: 4px; background: #111; margin-top: 2px; width: 100%; }
+        .bar-fill { height: 100%; background: var(--primary); width: 0%; box-shadow: 0 0 5px var(--primary); transition: width 0.5s ease; }
         .bar-fill.hp { background: var(--secondary); box-shadow: 0 0 5px var(--secondary); }
 
-        /* --- RIGHT SIDE (TERMINAL) --- */
-        #terminal {
-            flex: 1; /* Занимает все остальное место */
-            display: flex; flex-direction: column;
-            background: var(--terminal-bg);
-            position: relative;
-            min-width: 0; /* Fix for flex items overflow */
-        }
+        /* --- TERMINAL (RIGHT) --- */
+        #terminal { flex: 1; display: flex; flex-direction: column; background: var(--terminal-bg); position: relative; min-width: 0; }
 
-        #log-area {
-            flex: 1; overflow-y: auto; overflow-x: hidden;
-            padding: 20px;
-            display: flex; flex-direction: column; gap: 10px;
-            scroll-behavior: smooth;
-        }
+        #log-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth; }
 
-        /* Сообщения */
-        .msg {
-            max-width: 90%;
-            line-height: 1.6; font-size: 15px;
-            animation: slideIn 0.3s ease-out;
-        }
-        
+        .msg { max-width: 90%; line-height: 1.6; font-size: 15px; animation: slideIn 0.3s ease-out; }
         .msg.ai { color: var(--text-main); }
+        .msg.user { align-self: flex-end; text-align: right; color: var(--text-dim); border-right: 2px solid var(--secondary); padding-right: 10px; }
         
-        .msg.ai strong { color: var(--primary); font-weight: 700; } /* Выделения */
-        .msg.ai em { color: var(--warning); font-style: normal; } /* Курсив */
-
-        .msg.user {
-            align-self: flex-end; text-align: right;
-            color: var(--text-dim);
-            border-right: 2px solid var(--secondary);
-            padding-right: 10px;
-            margin-top: 5px; margin-bottom: 5px;
+        .msg.system { 
+            color: var(--warning); font-size: 12px; font-family: 'Rajdhani'; 
+            border: 1px solid var(--warning); padding: 5px; background: rgba(255, 204, 0, 0.05); text-align: center; width: 100%;
         }
-
-        .msg.system {
-            color: var(--warning); font-size: 13px;
-            border: 1px solid var(--warning);
-            padding: 8px; background: rgba(255, 204, 0, 0.05);
-            text-align: center; width: 100%;
-        }
+        .msg.scan { color: var(--primary); font-size: 12px; font-style: italic; opacity: 0.8; }
 
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Input Zone */
-        #input-zone {
-            padding: 15px;
-            background: rgba(0,0,0,0.8);
-            border-top: 1px solid var(--border-color);
-            display: flex; flex-direction: column; gap: 10px;
-        }
-
-        #cmd-line {
-            display: flex; align-items: center; gap: 10px;
-            background: rgba(0, 255, 200, 0.05);
-            border: 1px solid var(--primary);
-            padding: 8px 12px;
-        }
-
+        /* INPUT */
+        #input-zone { padding: 15px; background: rgba(0,0,0,0.8); border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px; }
+        
+        #cmd-line { display: flex; align-items: center; gap: 10px; background: rgba(0, 255, 200, 0.05); border: 1px solid var(--primary); padding: 8px 12px; }
         #prompt-char { color: var(--primary); font-weight: bold; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0; } }
-
-        #input {
-            flex: 1; background: transparent; border: none;
-            color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 16px;
-            outline: none;
-        }
-
-        /* Quick Buttons */
-        #quick-btns {
-            display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px;
-        }
         
-        .btn {
-            background: transparent; border: 1px solid var(--text-dim);
-            color: var(--text-dim); padding: 6px 12px;
-            font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 14px;
-            cursor: pointer; white-space: nowrap; transition: 0.2s;
-            text-transform: uppercase;
+        #input { flex: 1; background: transparent; border: none; color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 16px; outline: none; }
+        
+        #quick-btns { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
+        .btn { 
+            background: transparent; border: 1px solid var(--text-dim); color: var(--text-dim); padding: 6px 12px; 
+            font-family: 'Rajdhani', sans-serif; font-weight: 600; cursor: pointer; white-space: nowrap; transition: 0.2s;
         }
         .btn:hover { border-color: var(--primary); color: var(--primary); box-shadow: var(--glow); }
-        .btn:active { background: var(--primary); color: #000; }
-        
         .btn.danger { border-color: var(--secondary); color: var(--secondary); }
-        .btn.danger:active { background: var(--secondary); color: #fff; }
 
-        /* --- MOBILE ADAPTIVE (iPhone/Telegram) --- */
+        /* MOBILE */
         @media (max-width: 768px) {
-            #app-container {
-                flex-direction: column; /* Вертикальный стек */
-            }
-
-            #hud {
-                width: 100%;
-                height: auto;
-                max-height: 25vh; /* HUD занимает верхнюю четверть */
-                flex-direction: row; /* Блоки внутри HUD в ряд */
-                padding: 10px;
-                border-right: none; border-bottom: 1px solid var(--border-color);
-            }
-
-            .hud-panel {
-                flex: 1; min-width: 120px; /* Чтобы скроллилось если тесно */
-                font-size: 11px;
-                padding: 6px;
-            }
-            
-            .hud-label { font-size: 12px; margin-bottom: 4px; }
-            
-            #log-area {
-                padding: 15px 10px;
-                font-size: 14px;
-            }
-            
-            /* Скрываем инвентарь на мобильном HUD если он пуст или длинный, чтобы не ломать верстку */
+            #app-container { flex-direction: column; }
+            #hud { width: 100%; height: auto; max-height: 25vh; flex-direction: row; padding: 10px; border-right: none; border-bottom: 1px solid var(--border-color); }
+            .hud-panel { flex: 1; min-width: 120px; font-size: 11px; padding: 6px; }
+            #log-area { font-size: 14px; }
             #panel-inv { display: none; } 
         }
     </style>
@@ -244,22 +127,18 @@
             <div class="stat-row"><span>Класс:</span> <span id="class" class="stat-val">...</span></div>
             <div class="stat-row"><span>LVL:</span> <span id="lvl" class="stat-val">1</span></div>
         </div>
-
         <div class="hud-panel">
             <div class="hud-label">VITALS</div>
             <div class="stat-row"><span>HP:</span> <span id="hp-val" class="stat-val">100</span></div>
             <div class="bar-container"><div class="bar-fill hp" id="hp-bar" style="width: 100%"></div></div>
-            
             <div class="stat-row" style="margin-top: 5px;"><span>XP:</span> <span id="xp-val" class="stat-val">0</span></div>
             <div class="bar-container"><div class="bar-fill" id="xp-bar" style="width: 0%"></div></div>
         </div>
-
         <div class="hud-panel">
             <div class="hud-label">ECONOMY</div>
             <div class="stat-row"><span>Кредиты:</span> <span id="credits" class="stat-val" style="color:var(--warning)">0 CR</span></div>
             <div class="stat-row"><span>Локация:</span> <span id="location" class="stat-val">...</span></div>
         </div>
-
         <div class="hud-panel" id="panel-inv">
             <div class="hud-label">STORAGE</div>
             <div id="inventory" style="font-size: 11px; line-height: 1.4; color: #aaa;">Загрузка...</div>
@@ -269,12 +148,10 @@
     <div id="terminal">
         <div id="log-area">
             <div class="msg system">
-                [SYSTEM] JANUS CORE v19.2 CONNECTED.<br>
-                [MODE] SANDBOX RPG. PSYOP PROTOCOLS ACTIVE.<br>
-                [STATUS] Ожидание ввода...
+                [SYSTEM] JANUS RPG PROTOCOL v2.0<br>
+                [STATUS] Загрузка модулей...
             </div>
         </div>
-
         <div id="input-zone">
             <div id="quick-btns">
                 <button class="btn" onclick="send('Осмотреться')">ОСМОТР</button>
@@ -292,16 +169,81 @@
 </div>
 
 <script>
-    // ==========================================
-    const API_BASE = "https://supperless-yoshiko-noneruditely.ngrok-free.dev"; 
-    const USER_ID = "392910542"; 
-    // ==========================================
+    // =================================================================
+    // CONFIG: OMNI-SCANNER (АДАПТИРОВАНО ДЛЯ ИГРЫ)
+    // =================================================================
+    const EXTERNAL_NODES = [
+        "https://supperless-yoshiko-noneruditely.ngrok-free.dev" // <--- Твой Ngrok (меняй если обновится)
+    ];
+
+    const LOCAL_IPS = [
+        "192.168.1.92", // <--- Твой QNAP
+        "127.0.0.1",
+        "localhost",
+        window.location.hostname 
+    ];
+
+    const PORTS_TO_SCAN = [5000]; 
+    let ACTIVE_URL = null; // Сюда запишется найденный адрес
+    // =================================================================
+
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    tg.setHeaderColor('#0a0a0a');
+    tg.setBackgroundColor('#020202');
+
+    // Получаем ID пользователя из Телеграма (или ставим дефолт для тестов)
+    const USER_ID = tg.initDataUnsafe?.user?.id || "392910542"; 
 
     const logEl = document.getElementById('log-area');
     const inputEl = document.getElementById('input');
     let isBusy = false;
 
-    // --- UTILS ---
+    // --- LOGIC: SCANNER ---
+    async function findJanus() {
+        let potentialNodes = [...EXTERNAL_NODES];
+        let uniqueIps = [...new Set(LOCAL_IPS)];
+        
+        // Генерация списка адресов
+        for (let ip of uniqueIps) {
+            if (!ip) continue;
+            for (let port of PORTS_TO_SCAN) {
+                potentialNodes.push(`http://${ip}:${port}`);
+            }
+        }
+
+        addMsg(`[SCAN] Инициализация поиска Ядра (${potentialNodes.length} узлов)...`, "scan");
+
+        for (let node of potentialNodes) {
+            let prettyNode = node.replace(/^https?:\/\//, '');
+            // Пинг-запрос (проверяем, жив ли сервер)
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1500); // 1.5 сек на попытку
+
+                const res = await fetch(`${node}/api/get_user_state`, {
+                    signal: controller.signal,
+                    headers: { "ngrok-skip-browser-warning": "true" }
+                });
+                clearTimeout(timeoutId);
+
+                if (res.ok) {
+                    ACTIVE_URL = node;
+                    addMsg(`[OK] Связь установлена: ${prettyNode}`, "system");
+                    // Сразу запрашиваем статус игрока
+                    send('Статус', true); 
+                    return;
+                }
+            } catch (e) {
+                // Если не удалось, молча идем к следующему
+            }
+        }
+
+        addMsg(`[CRITICAL] Не удалось найти сервер Януса.<br>Проверьте, запущен ли скрипт на QNAP и включен ли Ngrok.`, "system");
+        document.getElementById('prompt-char').style.color = 'var(--secondary)';
+    }
+
+    // --- LOGIC: GAME ---
     function addMsg(html, type = 'ai') {
         const div = document.createElement('div');
         div.className = `msg ${type}`;
@@ -311,50 +253,53 @@
     }
 
     function formatText(text) {
-        // Markdown parsers
-        let t = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); // Bold
-        t = t.replace(/\*(.*?)\*/g, '<em>$1</em>'); // Italic
+        let t = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        t = t.replace(/\*(.*?)\*/g, '<em>$1</em>');
         t = t.replace(/\n/g, '<br>');
+        // Заменяем маркер Королевы на красивый блок
+        t = t.replace(/\[QUEEN\]/g, '<br><br><span style="color:var(--secondary); font-family:\'Rajdhani\'; letter-spacing:1px; border:1px solid var(--secondary); padding:2px 5px;">👸 КОРОЛЕВА</span> ');
         return t;
     }
 
     function updateHUD(d) {
         if(!d) return;
-        // Text updates
         if(d.name) document.getElementById('name').textContent = d.name;
         if(d.class_type) document.getElementById('class').textContent = d.class_type;
         if(d.lvl !== undefined) document.getElementById('lvl').textContent = d.lvl;
         if(d.credits !== undefined) document.getElementById('credits').textContent = d.credits + " CR";
         if(d.loc) document.getElementById('location').textContent = d.loc;
-        
-        // Bars
         if(d.hp !== undefined) {
             document.getElementById('hp-val').textContent = d.hp;
             document.getElementById('hp-bar').style.width = d.hp + "%";
         }
-        
-        // Inventory
         if(d.inv) {
             const items = Array.isArray(d.inv) ? d.inv.join(', ') : d.inv;
             document.getElementById('inventory').textContent = items || "Пусто";
         }
     }
 
-    async function send(cmd = null) {
+    async function send(cmd = null, silent = false) {
+        if (!ACTIVE_URL) {
+            if(!silent) addMsg("Ожидание подключения к серверу...", "scan");
+            return;
+        }
         if (isBusy) return;
+
         const text = cmd || inputEl.value.trim();
         if (!text) return;
 
-        // UI Feedback
-        addMsg(text, 'user');
+        if (!silent) addMsg(text, 'user');
         inputEl.value = '';
         isBusy = true;
-        document.getElementById('prompt-char').style.color = 'var(--secondary)'; // Busy color
+        document.getElementById('prompt-char').style.color = 'var(--secondary)';
 
         try {
-            const res = await fetch(`${API_BASE}/api/rpg/action`, {
+            const res = await fetch(`${ACTIVE_URL}/api/rpg/action`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true' // Важно для Ngrok
+                },
                 body: JSON.stringify({ user_id: USER_ID, message: text })
             });
 
@@ -362,28 +307,31 @@
             const data = await res.json();
 
             if (data.text) {
-                // Если это системное сообщение
                 if (data.text.includes('[СИСТЕМА]')) {
                     addMsg(formatText(data.text), 'system');
                 } else {
                     addMsg(formatText(data.text), 'ai');
                 }
             }
-            
             if (data.hud_update) updateHUD(data.hud_update);
 
         } catch (e) {
-            addMsg("[СБОЙ СОЕДИНЕНИЯ] Проверьте Янус-Ядро.", "system");
+            console.error(e);
+            addMsg(`[СБОЙ] Потеря связи с ${ACTIVE_URL}`, "system");
+            ACTIVE_URL = null; // Сброс, чтобы попробовать переподключиться
+            findJanus(); // Реконнект
         } finally {
             isBusy = false;
-            document.getElementById('prompt-char').style.color = 'var(--primary)'; // Ready color
+            document.getElementById('prompt-char').style.color = 'var(--primary)';
             inputEl.focus();
         }
     }
 
     // Init
     inputEl.addEventListener('keypress', (e) => { if(e.key === 'Enter') send(); });
-    setTimeout(() => send('Статус'), 800); // Auto-ping on load
+    
+    // Запускаем поиск сервера при загрузке страницы
+    window.addEventListener('DOMContentLoaded', findJanus);
 
 </script>
 </body>
