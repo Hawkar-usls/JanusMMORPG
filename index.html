@@ -3,335 +3,302 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>JANUS: INITIUM CHRONICLES</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <title>JANUS: INITIUM | TERMINAL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* CYBERPUNK PALETTE */
-            --bg-color: #030508;
-            --terminal-bg: rgba(5, 10, 16, 0.95);
-            --hud-bg: rgba(0, 20, 20, 0.6);
-            
-            --primary: #00ffc8;   /* Neon Cyan */
-            --secondary: #ff0055; /* Neon Pink */
-            --warning: #ffcc00;   /* Neon Yellow */
-            --text-main: #c0d6e4;
-            --text-dim: #5a7b8c;
-            
-            --border-color: rgba(0, 255, 200, 0.2);
-            --glow: 0 0 10px rgba(0, 255, 200, 0.15);
+            --bg-deep: #0a0a1a;
+            --c-primary: #00ffc4; /* Neon Cyan */
+            --c-janus: #ff6699; /* Neon Magenta */
+            --c-text: #e0e0e0;
+            --glass: rgba(10, 20, 40, 0.7);
+            --border-primary: rgba(0, 255, 196, 0.3);
         }
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            margin: 0; padding: 0;
-            width: 100vw; height: 100dvh;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: 'JetBrains Mono', monospace;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100vh;
+            background: var(--bg-deep);
+            color: var(--c-text);
+            font-family: 'Share Tech Mono', monospace;
             display: flex;
             overflow: hidden;
-            background-image: radial-gradient(circle at 50% 50%, #0a1520 0%, #000 100%);
         }
 
-        /* CRT SCANLINE */
-        body::after {
-            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 999; background-size: 100% 2px, 3px 100%; pointer-events: none;
+        /* LAYOUT */
+        #sidebar {
+            width: 280px;
+            background: var(--glass);
+            border-right: 1px solid var(--border-primary);
+            padding: 20px 15px;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
         }
 
-        #app-container { display: flex; width: 100%; height: 100%; flex-direction: row; }
-
-        /* --- HUD (LEFT) --- */
-        #hud {
-            width: 320px; background: var(--hud-bg); border-right: 1px solid var(--border-color);
-            padding: 15px; display: flex; flex-direction: column; gap: 12px;
-            overflow-y: auto; backdrop-filter: blur(10px); z-index: 10; flex-shrink: 0;
+        #main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
         }
 
-        .hud-panel {
-            border: 1px solid var(--border-color); background: rgba(0, 255, 200, 0.02);
-            padding: 10px; position: relative;
+        /* HEADER */
+        .header {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--c-primary);
+            margin-bottom: 15px;
+            letter-spacing: 1px;
         }
-        .hud-panel::before { content: ''; position: absolute; top: -1px; left: -1px; width: 8px; height: 8px; border-top: 2px solid var(--primary); border-left: 2px solid var(--primary); }
-        .hud-panel::after { content: ''; position: absolute; bottom: -1px; right: -1px; width: 8px; height: 8px; border-bottom: 2px solid var(--primary); border-right: 2px solid var(--primary); }
 
+        /* LOG/NARRATIVE AREA */
+        #narrative-log {
+            flex-grow: 1;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border-primary);
+            padding: 15px;
+            margin-bottom: 15px;
+            overflow-y: scroll;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            scroll-behavior: smooth;
+        }
+
+        /* INPUT AREA */
+        #command-input-container {
+            display: flex;
+            border: 1px solid var(--c-primary);
+            background: rgba(0,0,0,0.5);
+        }
+        #command-prefix {
+            padding: 10px;
+            color: var(--c-janus);
+            font-weight: bold;
+        }
+        #command-input {
+            flex-grow: 1;
+            border: none;
+            background: transparent;
+            color: var(--c-text);
+            padding: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+        }
+
+        /* HUD STYLES */
+        .hud-block {
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            margin-top: 10px;
+        }
         .hud-label {
-            font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px;
-            color: var(--primary); letter-spacing: 2px; text-transform: uppercase;
-            margin-bottom: 8px; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px;
+            color: var(--c-primary);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .stat-value {
+            font-size: 16px;
+            font-weight: 700;
+        }
+        .skill-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #aaa;
+            padding: 3px 0;
+            border-bottom: 1px dotted rgba(255,255,255,0.1);
+        }
+        .skill-value {
+            color: var(--c-primary);
         }
 
-        .stat-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 13px; }
-        .stat-val { color: #fff; font-weight: 700; text-shadow: var(--glow); }
-
-        .bar-container { height: 4px; background: #111; margin-top: 2px; width: 100%; }
-        .bar-fill { height: 100%; background: var(--primary); width: 0%; box-shadow: 0 0 5px var(--primary); transition: width 0.5s ease; }
-        .bar-fill.hp { background: var(--secondary); box-shadow: 0 0 5px var(--secondary); }
-
-        /* --- TERMINAL (RIGHT) --- */
-        #terminal { flex: 1; display: flex; flex-direction: column; background: var(--terminal-bg); position: relative; min-width: 0; }
-
-        #log-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth; }
-
-        .msg { max-width: 90%; line-height: 1.6; font-size: 15px; animation: slideIn 0.3s ease-out; }
-        .msg.ai { color: var(--text-main); }
-        .msg.user { align-self: flex-end; text-align: right; color: var(--text-dim); border-right: 2px solid var(--secondary); padding-right: 10px; }
-        
-        .msg.system { 
-            color: var(--warning); font-size: 12px; font-family: 'Rajdhani'; 
-            border: 1px solid var(--warning); padding: 5px; background: rgba(255, 204, 0, 0.05); text-align: center; width: 100%;
+        /* UTILITY BUTTONS */
+        .util-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background: var(--c-primary);
+            color: #000;
+            border: none;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
         }
-        .msg.scan { color: var(--primary); font-size: 12px; font-style: italic; opacity: 0.8; }
-
-        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* INPUT */
-        #input-zone { padding: 15px; background: rgba(0,0,0,0.8); border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px; }
-        
-        #cmd-line { display: flex; align-items: center; gap: 10px; background: rgba(0, 255, 200, 0.05); border: 1px solid var(--primary); padding: 8px 12px; }
-        #prompt-char { color: var(--primary); font-weight: bold; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
-        
-        #input { flex: 1; background: transparent; border: none; color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 16px; outline: none; }
-        
-        #quick-btns { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
-        .btn { 
-            background: transparent; border: 1px solid var(--text-dim); color: var(--text-dim); padding: 6px 12px; 
-            font-family: 'Rajdhani', sans-serif; font-weight: 600; cursor: pointer; white-space: nowrap; transition: 0.2s;
-        }
-        .btn:hover { border-color: var(--primary); color: var(--primary); box-shadow: var(--glow); }
-        .btn.danger { border-color: var(--secondary); color: var(--secondary); }
-
-        /* MOBILE */
-        @media (max-width: 768px) {
-            #app-container { flex-direction: column; }
-            #hud { width: 100%; height: auto; max-height: 25vh; flex-direction: row; padding: 10px; border-right: none; border-bottom: 1px solid var(--border-color); }
-            .hud-panel { flex: 1; min-width: 120px; font-size: 11px; padding: 6px; }
-            #log-area { font-size: 14px; }
-            #panel-inv { display: none; } 
+        .util-btn:hover {
+            background: #fff;
         }
     </style>
 </head>
 <body>
 
-<div id="app-container">
-    <div id="hud">
-        <div class="hud-panel">
-            <div class="hud-label">ID SUBJECT</div>
-            <div class="stat-row"><span>Имя:</span> <span id="name" class="stat-val">...</span></div>
-            <div class="stat-row"><span>Класс:</span> <span id="class" class="stat-val">...</span></div>
-            <div class="stat-row"><span>LVL:</span> <span id="lvl" class="stat-val">1</span></div>
+    <div id="sidebar">
+        <div class="header">STATUS MONITOR</div>
+
+        <div id="hud-stats">
+            <div class="hud-block">
+                <div class="hud-label">Имя: <span id="p-name">--</span></div>
+                <div class="stat-value" id="p-class">--</div>
+            </div>
+            
+            <div class="hud-block">
+                <div class="hud-label">Здоровье / Уровень: <span id="p-hp">--</span></div>
+                <div class="stat-value" id="p-lvl">--</div>
+            </div>
+
+            <div class="hud-block">
+                <div class="hud-label">Кредиты:</div>
+                <div class="stat-value" id="p-credits">100 CR</div>
+            </div>
+
+            <div class="hud-block">
+                <div class="hud-label">Локация:</div>
+                <div class="stat-value" id="p-loc">Station Initium</div>
+            </div>
+
+            <div class="hud-block" id="skills-container">
+                <div class="hud-label">Навыки (Skills)</div>
+                <div id="p-skills">
+                    </div>
+            </div>
         </div>
-        <div class="hud-panel">
-            <div class="hud-label">VITALS</div>
-            <div class="stat-row"><span>HP:</span> <span id="hp-val" class="stat-val">100</span></div>
-            <div class="bar-container"><div class="bar-fill hp" id="hp-bar" style="width: 100%"></div></div>
-            <div class="stat-row" style="margin-top: 5px;"><span>XP:</span> <span id="xp-val" class="stat-val">0</span></div>
-            <div class="bar-container"><div class="bar-fill" id="xp-bar" style="width: 0%"></div></div>
-        </div>
-        <div class="hud-panel">
-            <div class="hud-label">ECONOMY</div>
-            <div class="stat-row"><span>Кредиты:</span> <span id="credits" class="stat-val" style="color:var(--warning)">0 CR</span></div>
-            <div class="stat-row"><span>Локация:</span> <span id="location" class="stat-val">...</span></div>
-        </div>
-        <div class="hud-panel" id="panel-inv">
-            <div class="hud-label">STORAGE</div>
-            <div id="inventory" style="font-size: 11px; line-height: 1.4; color: #aaa;">Загрузка...</div>
-        </div>
+
+        <a id="inaihr-link" href="#" target="_blank" class="util-btn" style="background: var(--c-janus);">iNaiHR (ЗЕРКАЛО ДУШИ)</a>
     </div>
 
-    <div id="terminal">
-        <div id="log-area">
-            <div class="msg system">
-                [SYSTEM] JANUS RPG PROTOCOL v2.0<br>
-                [STATUS] Загрузка модулей...
-            </div>
+    <div id="main-content">
+        <div class="header">JANUS TERMINAL</div>
+        
+        <div id="narrative-log">
+            [INIT: 00:00:01] 🌐 Связь установлена. Ожидаю ввода команды...
+            <br>
         </div>
-        <div id="input-zone">
-            <div id="quick-btns">
-                <button class="btn" onclick="send('Осмотреться')">ОСМОТР</button>
-                <button class="btn" onclick="send('Статус')">СТАТУС</button>
-                <button class="btn" onclick="send('Инвентарь')">СУМКА</button>
-                <button class="btn" onclick="send('Задания')">ЗАДАЧИ</button>
-                <button class="btn danger" onclick="send('WIPE PROTOCOL')">СБРОС</button>
-            </div>
-            <div id="cmd-line">
-                <span id="prompt-char">█</span>
-                <input type="text" id="input" placeholder="Действие..." autocomplete="off">
-            </div>
+
+        <div id="command-input-container">
+            <span id="command-prefix">>></span>
+            <input type="text" id="command-input" placeholder="Введите команду или действие..." autofocus>
         </div>
     </div>
-</div>
 
 <script>
-    // =================================================================
-    // CONFIG: OMNI-SCANNER (АДАПТИРОВАНО ДЛЯ ИГРЫ)
-    // =================================================================
-    const EXTERNAL_NODES = [
-        "https://supperless-yoshiko-noneruditely.ngrok-free.dev" // <--- Твой Ngrok (меняй если обновится)
-    ];
+    // === CONFIGURATION ===
+    // Твой Ngrok адрес (Мост к Python Ядру)
+    const API_BASE = "https://supperless-yoshiko-noneruditely.ngrok-free.dev"; 
+    
+    // Временно используем фиксированный ID, пока нет системы входа через Telegram
+    const USER_ID = '392910542'; 
 
-    const LOCAL_IPS = [
-        "192.168.1.92", // <--- Твой QNAP
-        "127.0.0.1",
-        "localhost",
-        window.location.hostname 
-    ];
+    // === ELEMENTS ===
+    const logElement = document.getElementById('narrative-log');
+    const inputElement = document.getElementById('command-input');
+    const inaihrLink = document.getElementById('inaihr-link');
 
-    const PORTS_TO_SCAN = [5000]; 
-    let ACTIVE_URL = null; // Сюда запишется найденный адрес
-    // =================================================================
+    // Настройка ссылки на iNaiHR (открывается в новом окне)
+    inaihrLink.href = 'https://github.com/Hawkar-usls/iNaiHR-Janus-'; 
 
-    const tg = window.Telegram.WebApp;
-    tg.expand();
-    tg.setHeaderColor('#0a0a0a');
-    tg.setBackgroundColor('#020202');
-
-    // Получаем ID пользователя из Телеграма (или ставим дефолт для тестов)
-    const USER_ID = tg.initDataUnsafe?.user?.id || "392910542"; 
-
-    const logEl = document.getElementById('log-area');
-    const inputEl = document.getElementById('input');
-    let isBusy = false;
-
-    // --- LOGIC: SCANNER ---
-    async function findJanus() {
-        let potentialNodes = [...EXTERNAL_NODES];
-        let uniqueIps = [...new Set(LOCAL_IPS)];
-        
-        // Генерация списка адресов
-        for (let ip of uniqueIps) {
-            if (!ip) continue;
-            for (let port of PORTS_TO_SCAN) {
-                potentialNodes.push(`http://${ip}:${port}`);
+    // === EVENT LISTENER ===
+    inputElement.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const command = inputElement.value.trim();
+            if (command) {
+                displayUserCommand(command);
+                sendAction(command);
+                inputElement.value = '';
             }
         }
+    });
 
-        addMsg(`[SCAN] Инициализация поиска Ядра (${potentialNodes.length} узлов)...`, "scan");
-
-        for (let node of potentialNodes) {
-            let prettyNode = node.replace(/^https?:\/\//, '');
-            // Пинг-запрос (проверяем, жив ли сервер)
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 1500); // 1.5 сек на попытку
-
-                const res = await fetch(`${node}/api/get_user_state`, {
-                    signal: controller.signal,
-                    headers: { "ngrok-skip-browser-warning": "true" }
-                });
-                clearTimeout(timeoutId);
-
-                if (res.ok) {
-                    ACTIVE_URL = node;
-                    addMsg(`[OK] Связь установлена: ${prettyNode}`, "system");
-                    // Сразу запрашиваем статус игрока
-                    send('Статус', true); 
-                    return;
-                }
-            } catch (e) {
-                // Если не удалось, молча идем к следующему
-            }
-        }
-
-        addMsg(`[CRITICAL] Не удалось найти сервер Януса.<br>Проверьте, запущен ли скрипт на QNAP и включен ли Ngrok.`, "system");
-        document.getElementById('prompt-char').style.color = 'var(--secondary)';
+    // === DISPLAY FUNCTIONS ===
+    function displayUserCommand(command) {
+        logElement.innerHTML += `<span style="color:var(--c-primary);">> ${command}</span>\n`;
+        logElement.scrollTop = logElement.scrollHeight;
     }
 
-    // --- LOGIC: GAME ---
-    function addMsg(html, type = 'ai') {
-        const div = document.createElement('div');
-        div.className = `msg ${type}`;
-        div.innerHTML = html;
-        logEl.appendChild(div);
-        logEl.scrollTop = logEl.scrollHeight;
+    function displayNarrative(text) {
+        // Замена Newline на <br> для корректного отображения в HTML, сохраняя pre-wrap
+        const formattedText = text.replace(/\n/g, '<br>');
+        logElement.innerHTML += `<span style="color:var(--c-text);">${formattedText}</span><br>`;
+        logElement.scrollTop = logElement.scrollHeight;
     }
 
-    function formatText(text) {
-        let t = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        t = t.replace(/\*(.*?)\*/g, '<em>$1</em>');
-        t = t.replace(/\n/g, '<br>');
-        // Заменяем маркер Королевы на красивый блок
-        t = t.replace(/\[QUEEN\]/g, '<br><br><span style="color:var(--secondary); font-family:\'Rajdhani\'; letter-spacing:1px; border:1px solid var(--secondary); padding:2px 5px;">👸 КОРОЛЕВА</span> ');
-        return t;
-    }
+    function updateHUD(data) {
+        document.getElementById('p-name').innerText = data.name || '--';
+        document.getElementById('p-class').innerText = data.class || 'Drifter';
+        document.getElementById('p-lvl').innerText = `Lvl ${data.lvl || 1}`;
+        document.getElementById('p-hp').innerText = `HP: ${data.hp || 100}/100`;
+        document.getElementById('p-credits').innerText = `${data.credits || 100} CR`;
+        document.getElementById('p-loc').innerText = data.loc || 'Unknown Sector';
 
-    function updateHUD(d) {
-        if(!d) return;
-        if(d.name) document.getElementById('name').textContent = d.name;
-        if(d.class_type) document.getElementById('class').textContent = d.class_type;
-        if(d.lvl !== undefined) document.getElementById('lvl').textContent = d.lvl;
-        if(d.credits !== undefined) document.getElementById('credits').textContent = d.credits + " CR";
-        if(d.loc) document.getElementById('location').textContent = d.loc;
-        if(d.hp !== undefined) {
-            document.getElementById('hp-val').textContent = d.hp;
-            document.getElementById('hp-bar').style.width = d.hp + "%";
-        }
-        if(d.inv) {
-            const items = Array.isArray(d.inv) ? d.inv.join(', ') : d.inv;
-            document.getElementById('inventory').textContent = items || "Пусто";
+        // Update Skills (Dynamic List)
+        const skillsContainer = document.getElementById('p-skills');
+        skillsContainer.innerHTML = '';
+        const skills = data.skills || {};
+        const skillKeys = Object.keys(skills).sort();
+
+        if (skillKeys.length > 0) {
+            skillKeys.forEach(key => {
+                const item = document.createElement('div');
+                item.className = 'skill-item';
+                item.innerHTML = `<span>${key}:</span> <span class="skill-value">${skills[key]}</span>`;
+                skillsContainer.appendChild(item);
+            });
+        } else {
+            skillsContainer.innerHTML = `<div style="font-size:12px; color:#555;">Нет развитых навыков.</div>`;
         }
     }
 
-    async function send(cmd = null, silent = false) {
-        if (!ACTIVE_URL) {
-            if(!silent) addMsg("Ожидание подключения к серверу...", "scan");
-            return;
-        }
-        if (isBusy) return;
-
-        const text = cmd || inputEl.value.trim();
-        if (!text) return;
-
-        if (!silent) addMsg(text, 'user');
-        inputEl.value = '';
-        isBusy = true;
-        document.getElementById('prompt-char').style.color = 'var(--secondary)';
-
+    // === API LOGIC ===
+    async function sendAction(message) {
         try {
-            const res = await fetch(`${ACTIVE_URL}/api/rpg/action`, {
+            const res = await fetch(`${API_BASE}/api/rpg/action`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': 'true' // Важно для Ngrok
+                    'ngrok-skip-browser-warning': 'true' // Bypass Ngrok warning in development
                 },
-                body: JSON.stringify({ user_id: USER_ID, message: text })
+                body: JSON.stringify({ user_id: USER_ID, message: message })
             });
 
-            if (!res.ok) throw new Error("Server Error");
-            const data = await res.json();
-
-            if (data.text) {
-                if (data.text.includes('[СИСТЕМА]')) {
-                    addMsg(formatText(data.text), 'system');
-                } else {
-                    addMsg(formatText(data.text), 'ai');
-                }
+            if (!res.ok) {
+                const errorText = await res.text();
+                throw new Error(`Server responded with ${res.status}: ${errorText}`);
             }
-            if (data.hud_update) updateHUD(data.hud_update);
 
-        } catch (e) {
-            console.error(e);
-            addMsg(`[СБОЙ] Потеря связи с ${ACTIVE_URL}`, "system");
-            ACTIVE_URL = null; // Сброс, чтобы попробовать переподключиться
-            findJanus(); // Реконнект
-        } finally {
-            isBusy = false;
-            document.getElementById('prompt-char').style.color = 'var(--primary)';
-            inputEl.focus();
+            const data = await res.json();
+            
+            // Output Narrative
+            displayNarrative(data.text || "[SYSTEM] Received null narrative.");
+
+            // Update HUD if data is present
+            if (data.hud_update) {
+                // Merging player name/class from potential creation steps
+                data.hud_update.name = data.hud_update.name || document.getElementById('p-name').innerText;
+                data.hud_update.class = data.hud_update.class || document.getElementById('p-class').innerText;
+                
+                updateHUD(data.hud_update);
+            }
+
+        } catch (error) {
+            displayNarrative(`[ERROR] Connection failed: ${error.message}`);
         }
     }
 
-    // Init
-    inputEl.addEventListener('keypress', (e) => { if(e.key === 'Enter') send(); });
-    
-    // Запускаем поиск сервера при загрузке страницы
-    window.addEventListener('DOMContentLoaded', findJanus);
+    // Initial load command to get starting state (e.g., gender prompt)
+    sendAction('INITIALIZE'); 
 
 </script>
 </body>
