@@ -12,35 +12,98 @@
             --accent2: #ff3399;
             --text: #e0e0e0;
             --text-dim: #888;
-            --glass: rgba(15, 25, 50, 0.75);
+            --glass: rgba(15, 25, 50, 0.9); /* Сделаем чуть менее прозрачным для Telegram */
             --border: rgba(0, 255, 204, 0.3);
             --danger: #ff3366;
             --success: #00ff88;
+            --mobile-sidebar-height: 40vh; /* Высота HUD на мобильных */
         }
         * { box-sizing: border-box; }
+        
+        /* 1. Адаптивная Основа */
         body {
-            margin: 0; padding: 0; height: 100vh; width: 100vw;
+            margin: 0; padding: 0; min-height: 100vh; width: 100vw;
             background: var(--bg); color: var(--text);
             font-family: 'Share Tech Mono', monospace;
-            display: flex; overflow: hidden;
+            display: flex; 
+            flex-direction: row; /* Desktop default */
+            overflow: hidden; /* Основной контейнер без скролла */
         }
+
+        /* 2. Адаптивный Сайтбар (HUD) */
         #sidebar {
-            width: 320px; background: var(--glass);
-            border-right: 1px solid var(--border); padding: 20px;
-            display: flex; flex-direction: column; gap: 16px;
+            width: 320px; 
+            background: var(--glass);
+            border-right: 1px solid var(--border); 
+            padding: 16px; /* Чуть меньше паддинг для мобильных */
+            display: flex; flex-direction: column; 
+            gap: 12px; /* Чуть меньше гэп */
             overflow-y: auto;
+            flex-shrink: 0;
+            z-index: 10;
         }
+
+        /* 3. Основной Контейнер (Терминал) */
         #main {
-            flex: 1; display: flex; flex-direction: column; padding: 20px;
+            flex: 1; /* Растягивается на всю оставшуюся ширину */
+            display: flex; flex-direction: column; 
+            padding: 20px;
+            min-width: 0; /* Важно для предотвращения горизонтального скролла на мобильных */
         }
+        
+        /* Медиа-запрос для мобильных устройств (ширина < 768px) */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column-reverse; /* HUD снизу, Терминал сверху */
+                height: 100vh;
+                min-height: 100vh;
+            }
+            #sidebar {
+                width: 100%;
+                height: var(--mobile-sidebar-height); /* Занимает 40% высоты экрана */
+                border-right: none;
+                border-top: 2px solid var(--accent2); /* Яркая граница сверху */
+                padding: 12px;
+                order: 2; /* Помещаем HUD вниз */
+            }
+            #main {
+                flex: 1;
+                padding: 12px;
+                order: 1; /* Помещаем терминал наверх */
+            }
+            #log {
+                margin: 8px 0;
+            }
+            .hud-block {
+                /* На мобильных блоки идут горизонтально в HUD, чтобы экономить место */
+                display: inline-block;
+                width: 48%; /* Два блока в ряд */
+                margin-right: 2%;
+                margin-bottom: 5px;
+                vertical-align: top;
+            }
+            #location, #inventory {
+                width: 100%;
+                margin-right: 0;
+            }
+            /* Скрываем некоторые заголовки на мобильных для экономии места */
+            .hud-title {
+                display: none;
+            }
+        }
+
+
+        /* Общие стили */
         .header {
             font-family: 'Rajdhani', sans-serif; font-weight: 700;
             font-size: 22px; color: var(--accent); letter-spacing: 2px;
             text-shadow: 0 0 10px var(--accent);
+            text-transform: uppercase;
         }
         .hud-block {
             background: rgba(0,0,0,0.4); border: 1px solid var(--border);
             border-radius: 8px; padding: 12px; font-size: 13px;
+            line-height: 1.4;
         }
         .hud-title {
             color: var(--accent); font-weight: bold; margin-bottom: 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
@@ -56,6 +119,8 @@
         }
         #input-area {
             display: flex; border: 1px solid var(--accent); border-radius: 8px; overflow: hidden;
+            width: 100%; /* Убедимся, что растягивается */
+            flex-shrink: 0;
         }
         #prefix { background: var(--accent); color: #000; padding: 12px 16px; font-weight: bold; }
         #input { flex: 1; background: transparent; border: none; color: white; padding: 12px; font-size: 15px; outline: none; }
@@ -63,6 +128,7 @@
             background: rgba(255,255,255,0.1); color: var(--accent); border: 1px solid var(--border);
             padding: 8px 12px; margin: 4px 2px; border-radius: 4px; cursor: pointer; font-size: 12px;
             transition: all 0.2s;
+            display: inline-block; /* Для размещения в ряд */
         }
         .quick-btn:hover { background: var(--accent); color: #000; }
         .typing { color: var(--accent2); }
@@ -73,43 +139,46 @@
 </head>
 <body>
     <div id="sidebar">
-        <div class="header">JANUS: INITIUM</div>
+        <div class="header" style="display: none;">HUD</div> 
 
-        <div class="hud-block">
-            <div class="hud-title">ПЕРСОНА</div>
-            <div>Имя: <span id="name" class="value">—</span></div>
-            <div>Класс: <span id="class" class="value">—</span></div>
-            <div>Уровень: <span id="lvl" class="value">1</span></div>
+        <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+            <div class="hud-block" id="block-persona" style="flex-grow: 1;">
+                <div class="hud-title">ПЕРСОНА</div>
+                <div>Имя: <span id="name" class="value">—</span></div>
+                <div>Класс: <span id="class" class="value">—</span></div>
+                <div>Уровень: <span id="lvl" class="value">1</span></div>
+            </div>
+
+            <div class="hud-block" id="block-status" style="flex-grow: 1;">
+                <div class="hud-title">СТАТУС</div>
+                <div>HP: <span id="hp" class="value">100</span>/100</div>
+                <div>Кредиты: <span id="credits" class="value">100</span> CR</div>
+                <div>XP: <span id="xp" class="value">0</span></div>
+            </div>
         </div>
+        
 
-        <div class="hud-block">
-            <div class="hud-title">СТАТУС</div>
-            <div>HP: <span id="hp" class="value">100</span>/100</div>
-            <div>Кредиты: <span id="credits" class="value">100</span> CR</div>
-            <div>XP: <span id="xp" class="value">0</span></div>
-        </div>
-
-        <div class="hud-block">
+        <div class="hud-block" id="block-location">
             <div class="hud-title">ЛОКАЦИЯ</div>
             <div id="location" class="value">Station Initium</div>
         </div>
 
-        <div class="hud-block">
+        <div class="hud-block" id="block-inventory">
             <div class="hud-title">ИНВЕНТАРЬ</div>
             <div id="inventory">PDA, Ration</div>
         </div>
 
-        <div style="margin-top: 20px;">
-            <div class="quick-btn" onclick="send('осмотреться')">ОСМОТРЕТЬСЯ</div>
-            <div class="quick-btn" onclick="send('статус')">СТАТУС</div>
-            <div class="quick-btn" onclick="send('инвентарь')">ИНВЕНТАРЬ</div>
-            <div class="quick-btn" onclick="send('помощь')">ПОМОЩЬ</div>
-            <div class="quick-btn danger" onclick="send('WIPE PROTOCOL')" style="margin-top: 12px;">WIPE PROTOCOL</div>
+        <div style="margin-top: 12px;">
+            <div class="quick-btn" onclick="quickSend('осмотреться')">ОСМОТРЕТЬСЯ</div>
+            <div class="quick-btn" onclick="quickSend('статус')">СТАТУС</div>
+            <div class="quick-btn" onclick="quickSend('инвентарь')">ИНВЕНТАРЬ</div>
+            <div class="quick-btn" onclick="quickSend('помощь')">ПОМОЩЬ</div>
+            <div class="quick-btn danger" onclick="quickSend('WIPE PROTOCOL')" style="margin-top: 8px;">WIPE PROTOCOL</div>
         </div>
     </div>
 
     <div id="main">
-        <div class="header">ТЕРМИНАЛ</div>
+        <div class="header">JANUS: INITIUM ТЕРМИНАЛ</div>
         <div id="log">[SYSTEM] JANUS: INITIUM загружен. Ожидание идентификации...</div>
 
         <div id="input-area">
@@ -125,6 +194,9 @@
 
     const log = document.getElementById('log');
     const input = document.getElementById('input');
+    let isTyping = false;
+
+    // --- Core Functions ---
 
     function addLine(text, className = '') {
         const line = document.createElement('div');
@@ -135,6 +207,8 @@
     }
 
     function typeText(text, callback) {
+        if (isTyping) return;
+        isTyping = true;
         let i = 0;
         const line = document.createElement('div');
         line.className = 'typing';
@@ -146,57 +220,85 @@
                 line.textContent += text.charAt(i);
                 i++;
                 log.scrollTop = log.scrollHeight;
-            } 
-            else {
+            } else {
                 clearInterval(timer);
                 line.className = '';
+                isTyping = false;
                 if (callback) callback();
             }
-        }, 20);
+        }, 20); // Скорость набора
     }
 
     function updateHUD(data) {
+        // Проверка наличия имени/класса для скрытия HUD-заголовков на мобильных
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+             ['block-persona', 'block-status', 'block-location', 'block-inventory'].forEach(id => {
+                const block = document.getElementById(id);
+                if (block) block.style.display = 'block';
+            });
+        }
+        
+        // Обновление значений
         if (data.name) document.getElementById('name').textContent = data.name;
-        if (data.class) document.getElementById('class').textContent = data.class;
-        document.getElementById('lvl').textContent = data.lvl || 1;
-        document.getElementById('hp').textContent = data.hp || 100;
-        document.getElementById('credits').textContent = data.credits || 0;
-        document.getElementById('xp').textContent = data.xp || 0;
-        document.getElementById('location').textContent = data.loc || 'Station Initium';
+        if (data.class_type) document.getElementById('class').textContent = data.class_type; // Используем class_type из API
+        
+        document.getElementById('lvl').textContent = data.lvl || document.getElementById('lvl').textContent;
+        document.getElementById('hp').textContent = data.hp || document.getElementById('hp').textContent;
+        document.getElementById('credits').textContent = data.credits || document.getElementById('credits').textContent;
+        document.getElementById('xp').textContent = data.xp || document.getElementById('xp').textContent;
+        document.getElementById('location').textContent = data.loc || document.getElementById('location').textContent;
+        
         const inv = data.inv || [];
         document.getElementById('inventory').innerHTML = inv.length ? inv.join(', ') : '<span style="color:#555">Пусто</span>';
     }
 
     async function send(message) {
-        if (!message.trim()) return;
+        if (!message.trim() || isTyping) return;
         const cmd = message.trim();
         addLine(`> ${cmd}`, 'system');
         input.value = '';
         input.disabled = true;
 
         try {
+            // FIX: Проверка, что API_BASE не является заглушкой
+            if (API_BASE.includes("ngrok-адрес")) {
+                throw new Error("Необходимо изменить API_BASE на ваш реальный адрес ngrok.");
+            }
+
             const res = await fetch(`${API_BASE}/api/rpg/action`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                 body: JSON.stringify({ user_id: USER_ID, message: cmd })
             });
 
+            if (!res.ok) {
+                 const errorText = await res.text();
+                 throw new Error(`API Error ${res.status}: ${errorText}`);
+            }
+
             const data = await res.json();
 
             if (data.text) {
-                if (data.text.includes('[СМЕРТЬ]')) {
-                    addLine(data.text, 'death');
-                } else if (data.text.includes('[LEVEL UP]')) {
-                    addLine(data.text, 'success');
+                let text = data.text;
+                // Замена ** и * на span для стилизации
+                text = text.replace(/\*\*(.*?)\*\*/g, '<span class="value">$1</span>');
+                text = text.replace(/\*(.*?)\*/g, '<span class="value">$1</span>');
+                
+                // Проверки для стилизации
+                if (text.includes('[СМЕРТЬ]') || text.includes('[SYSTEM] IDENTITY WIPED')) {
+                    addLine(text, 'death');
+                } else if (text.includes('[LEVEL UP]') || text.includes('[СИСТЕМА] ID подтвержден')) {
+                    addLine(text, 'success');
                 } else {
-                    typeText(data.text);
+                    typeText(text);
                 }
             }
 
             if (data.hud_update) updateHUD(data.hud_update);
 
         } catch (e) {
-            addLine(`[ОШИБКА СВЯЗИ] ${e.message}`, 'danger');
+            addLine(`[КРИТИЧЕСКАЯ ОШИБКА] ${e.message}`, 'danger');
         } finally {
             input.disabled = false;
             input.focus();
@@ -207,8 +309,19 @@
 
     input.addEventListener('keydown', e => { if (e.key === 'Enter') send(input.value); });
 
-    // Автостарт
-    setTimeout(() => send(''), 500);
+    // Обработка начальной загрузки и центровки
+    function init() {
+        // Убедимся, что body имеет 100vh для мобильных (Telegram)
+        document.body.style.height = window.innerHeight + 'px';
+        window.addEventListener('resize', () => {
+            document.body.style.height = window.innerHeight + 'px';
+        });
+
+        // Запуск начальной команды
+        setTimeout(() => send(''), 500); 
+    }
+
+    init();
 </script>
 </body>
 </html>
