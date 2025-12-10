@@ -2,326 +2,389 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JANUS: INITIUM</title>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>JANUS: SANDBOX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0a0a1a;
-            --accent: #00ffcc;
-            --accent2: #ff3399;
-            --text: #e0e0e0;
-            --text-dim: #888;
-            --glass: rgba(15, 25, 50, 0.9); /* Сделаем чуть менее прозрачным для Telegram */
-            --border: rgba(0, 255, 204, 0.3);
-            --danger: #ff3366;
-            --success: #00ff88;
-            --mobile-sidebar-height: 40vh; /* Высота HUD на мобильных */
+            /* CYBERPUNK PALETTE */
+            --bg-color: #030508;
+            --terminal-bg: rgba(5, 10, 16, 0.95);
+            --hud-bg: rgba(0, 20, 20, 0.6);
+            
+            --primary: #00ffc8;   /* Neon Cyan */
+            --secondary: #ff0055; /* Neon Pink */
+            --warning: #ffcc00;   /* Neon Yellow */
+            --text-main: #c0d6e4;
+            --text-dim: #5a7b8c;
+            
+            --border-color: rgba(0, 255, 200, 0.2);
+            --glow: 0 0 10px rgba(0, 255, 200, 0.15);
+            
+            --scanline-color: rgba(0, 0, 0, 0.5);
         }
-        * { box-sizing: border-box; }
-        
-        /* 1. Адаптивная Основа */
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         body {
-            margin: 0; padding: 0; min-height: 100vh; width: 100vw;
-            background: var(--bg); color: var(--text);
-            font-family: 'Share Tech Mono', monospace;
-            display: flex; 
-            flex-direction: row; /* Desktop default */
-            overflow: hidden; /* Основной контейнер без скролла */
+            margin: 0; padding: 0;
+            width: 100vw; height: 100dvh; /* Dynamic Height for iOS */
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 50%, #0a1520 0%, #000 100%);
         }
 
-        /* 2. Адаптивный Сайтбар (HUD) */
-        #sidebar {
-            width: 320px; 
-            background: var(--glass);
-            border-right: 1px solid var(--border); 
-            padding: 16px; /* Чуть меньше паддинг для мобильных */
-            display: flex; flex-direction: column; 
-            gap: 12px; /* Чуть меньше гэп */
+        /* --- CRT EFFECT OVERLAY --- */
+        body::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 999;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        /* --- LAYOUT CONTAINER --- */
+        #app-container {
+            display: flex;
+            width: 100%; height: 100%;
+            flex-direction: row; /* Desktop: Side-by-side */
+        }
+
+        /* --- LEFT SIDEBAR (HUD) --- */
+        #hud {
+            width: 320px;
+            background: var(--hud-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 15px;
+            display: flex; flex-direction: column; gap: 12px;
             overflow-y: auto;
-            flex-shrink: 0;
+            backdrop-filter: blur(10px);
             z-index: 10;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
         }
 
-        /* 3. Основной Контейнер (Терминал) */
-        #main {
-            flex: 1; /* Растягивается на всю оставшуюся ширину */
-            display: flex; flex-direction: column; 
-            padding: 20px;
-            min-width: 0; /* Важно для предотвращения горизонтального скролла на мобильных */
+        .hud-panel {
+            border: 1px solid var(--border-color);
+            background: rgba(0, 255, 200, 0.02);
+            padding: 10px;
+            position: relative;
         }
         
-        /* Медиа-запрос для мобильных устройств (ширина < 768px) */
-        @media (max-width: 768px) {
-            body {
-                flex-direction: column-reverse; /* HUD снизу, Терминал сверху */
-                height: 100vh;
-                min-height: 100vh;
-            }
-            #sidebar {
-                width: 100%;
-                height: var(--mobile-sidebar-height); /* Занимает 40% высоты экрана */
-                border-right: none;
-                border-top: 2px solid var(--accent2); /* Яркая граница сверху */
-                padding: 12px;
-                order: 2; /* Помещаем HUD вниз */
-            }
-            #main {
-                flex: 1;
-                padding: 12px;
-                order: 1; /* Помещаем терминал наверх */
-            }
-            #log {
-                margin: 8px 0;
-            }
-            .hud-block {
-                /* На мобильных блоки идут горизонтально в HUD, чтобы экономить место */
-                display: inline-block;
-                width: 48%; /* Два блока в ряд */
-                margin-right: 2%;
-                margin-bottom: 5px;
-                vertical-align: top;
-            }
-            #location, #inventory {
-                width: 100%;
-                margin-right: 0;
-            }
-            /* Скрываем некоторые заголовки на мобильных для экономии места */
-            .hud-title {
-                display: none;
-            }
+        /* Декоративные уголки */
+        .hud-panel::before {
+            content: ''; position: absolute; top: -1px; left: -1px;
+            width: 8px; height: 8px; border-top: 2px solid var(--primary); border-left: 2px solid var(--primary);
+        }
+        .hud-panel::after {
+            content: ''; position: absolute; bottom: -1px; right: -1px;
+            width: 8px; height: 8px; border-bottom: 2px solid var(--primary); border-right: 2px solid var(--primary);
         }
 
+        .hud-label {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700; font-size: 14px;
+            color: var(--primary); letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 8px; border-bottom: 1px dashed var(--border-color);
+            padding-bottom: 4px;
+        }
 
-        /* Общие стили */
-        .header {
-            font-family: 'Rajdhani', sans-serif; font-weight: 700;
-            font-size: 22px; color: var(--accent); letter-spacing: 2px;
-            text-shadow: 0 0 10px var(--accent);
+        .stat-row {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 4px; font-size: 13px;
+        }
+        .stat-val { color: #fff; font-weight: 700; text-shadow: var(--glow); }
+
+        /* Progress Bars */
+        .bar-container {
+            height: 4px; background: #111; margin-top: 2px; width: 100%; position: relative;
+        }
+        .bar-fill {
+            height: 100%; background: var(--primary); width: 100%;
+            box-shadow: 0 0 5px var(--primary);
+            transition: width 0.5s ease;
+        }
+        .bar-fill.hp { background: var(--secondary); box-shadow: 0 0 5px var(--secondary); }
+
+        /* --- RIGHT SIDE (TERMINAL) --- */
+        #terminal {
+            flex: 1; /* Занимает все остальное место */
+            display: flex; flex-direction: column;
+            background: var(--terminal-bg);
+            position: relative;
+            min-width: 0; /* Fix for flex items overflow */
+        }
+
+        #log-area {
+            flex: 1; overflow-y: auto; overflow-x: hidden;
+            padding: 20px;
+            display: flex; flex-direction: column; gap: 10px;
+            scroll-behavior: smooth;
+        }
+
+        /* Сообщения */
+        .msg {
+            max-width: 90%;
+            line-height: 1.6; font-size: 15px;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .msg.ai { color: var(--text-main); }
+        
+        .msg.ai strong { color: var(--primary); font-weight: 700; } /* Выделения */
+        .msg.ai em { color: var(--warning); font-style: normal; } /* Курсив */
+
+        .msg.user {
+            align-self: flex-end; text-align: right;
+            color: var(--text-dim);
+            border-right: 2px solid var(--secondary);
+            padding-right: 10px;
+            margin-top: 5px; margin-bottom: 5px;
+        }
+
+        .msg.system {
+            color: var(--warning); font-size: 13px;
+            border: 1px solid var(--warning);
+            padding: 8px; background: rgba(255, 204, 0, 0.05);
+            text-align: center; width: 100%;
+        }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Input Zone */
+        #input-zone {
+            padding: 15px;
+            background: rgba(0,0,0,0.8);
+            border-top: 1px solid var(--border-color);
+            display: flex; flex-direction: column; gap: 10px;
+        }
+
+        #cmd-line {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(0, 255, 200, 0.05);
+            border: 1px solid var(--primary);
+            padding: 8px 12px;
+        }
+
+        #prompt-char { color: var(--primary); font-weight: bold; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        #input {
+            flex: 1; background: transparent; border: none;
+            color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 16px;
+            outline: none;
+        }
+
+        /* Quick Buttons */
+        #quick-btns {
+            display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px;
+        }
+        
+        .btn {
+            background: transparent; border: 1px solid var(--text-dim);
+            color: var(--text-dim); padding: 6px 12px;
+            font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 14px;
+            cursor: pointer; white-space: nowrap; transition: 0.2s;
             text-transform: uppercase;
         }
-        .hud-block {
-            background: rgba(0,0,0,0.4); border: 1px solid var(--border);
-            border-radius: 8px; padding: 12px; font-size: 13px;
-            line-height: 1.4;
+        .btn:hover { border-color: var(--primary); color: var(--primary); box-shadow: var(--glow); }
+        .btn:active { background: var(--primary); color: #000; }
+        
+        .btn.danger { border-color: var(--secondary); color: var(--secondary); }
+        .btn.danger:active { background: var(--secondary); color: #fff; }
+
+        /* --- MOBILE ADAPTIVE (iPhone/Telegram) --- */
+        @media (max-width: 768px) {
+            #app-container {
+                flex-direction: column; /* Вертикальный стек */
+            }
+
+            #hud {
+                width: 100%;
+                height: auto;
+                max-height: 25vh; /* HUD занимает верхнюю четверть */
+                flex-direction: row; /* Блоки внутри HUD в ряд */
+                padding: 10px;
+                border-right: none; border-bottom: 1px solid var(--border-color);
+            }
+
+            .hud-panel {
+                flex: 1; min-width: 120px; /* Чтобы скроллилось если тесно */
+                font-size: 11px;
+                padding: 6px;
+            }
+            
+            .hud-label { font-size: 12px; margin-bottom: 4px; }
+            
+            #log-area {
+                padding: 15px 10px;
+                font-size: 14px;
+            }
+            
+            /* Скрываем инвентарь на мобильном HUD если он пуст или длинный, чтобы не ломать верстку */
+            #panel-inv { display: none; } 
         }
-        .hud-title {
-            color: var(--accent); font-weight: bold; margin-bottom: 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
-        }
-        .value { color: white; font-weight: bold; }
-        .danger { color: var(--danger); }
-        .success { color: var(--success); }
-        #log {
-            flex: 1; background: rgba(0,0,0,0.5); border: 1px solid var(--border);
-            padding: 16px; margin: 16px 0; overflow-y: auto;
-            line-height: 1.6; font-size: 14px; white-space: pre-wrap;
-            border-radius: 8px;
-        }
-        #input-area {
-            display: flex; border: 1px solid var(--accent); border-radius: 8px; overflow: hidden;
-            width: 100%; /* Убедимся, что растягивается */
-            flex-shrink: 0;
-        }
-        #prefix { background: var(--accent); color: #000; padding: 12px 16px; font-weight: bold; }
-        #input { flex: 1; background: transparent; border: none; color: white; padding: 12px; font-size: 15px; outline: none; }
-        .quick-btn {
-            background: rgba(255,255,255,0.1); color: var(--accent); border: 1px solid var(--border);
-            padding: 8px 12px; margin: 4px 2px; border-radius: 4px; cursor: pointer; font-size: 12px;
-            transition: all 0.2s;
-            display: inline-block; /* Для размещения в ряд */
-        }
-        .quick-btn:hover { background: var(--accent); color: #000; }
-        .typing { color: var(--accent2); }
-        .system { color: var(--accent); font-weight: bold; }
-        .death { color: var(--danger); animation: pulse 1s infinite; }
-        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
 <body>
-    <div id="sidebar">
-        <div class="header" style="display: none;">HUD</div> 
 
-        <div style="display: flex; flex-wrap: wrap; gap: 5px;">
-            <div class="hud-block" id="block-persona" style="flex-grow: 1;">
-                <div class="hud-title">ПЕРСОНА</div>
-                <div>Имя: <span id="name" class="value">—</span></div>
-                <div>Класс: <span id="class" class="value">—</span></div>
-                <div>Уровень: <span id="lvl" class="value">1</span></div>
-            </div>
-
-            <div class="hud-block" id="block-status" style="flex-grow: 1;">
-                <div class="hud-title">СТАТУС</div>
-                <div>HP: <span id="hp" class="value">100</span>/100</div>
-                <div>Кредиты: <span id="credits" class="value">100</span> CR</div>
-                <div>XP: <span id="xp" class="value">0</span></div>
-            </div>
-        </div>
-        
-
-        <div class="hud-block" id="block-location">
-            <div class="hud-title">ЛОКАЦИЯ</div>
-            <div id="location" class="value">Station Initium</div>
+<div id="app-container">
+    <div id="hud">
+        <div class="hud-panel">
+            <div class="hud-label">ID SUBJECT</div>
+            <div class="stat-row"><span>Имя:</span> <span id="name" class="stat-val">...</span></div>
+            <div class="stat-row"><span>Класс:</span> <span id="class" class="stat-val">...</span></div>
+            <div class="stat-row"><span>LVL:</span> <span id="lvl" class="stat-val">1</span></div>
         </div>
 
-        <div class="hud-block" id="block-inventory">
-            <div class="hud-title">ИНВЕНТАРЬ</div>
-            <div id="inventory">PDA, Ration</div>
+        <div class="hud-panel">
+            <div class="hud-label">VITALS</div>
+            <div class="stat-row"><span>HP:</span> <span id="hp-val" class="stat-val">100</span></div>
+            <div class="bar-container"><div class="bar-fill hp" id="hp-bar" style="width: 100%"></div></div>
+            
+            <div class="stat-row" style="margin-top: 5px;"><span>XP:</span> <span id="xp-val" class="stat-val">0</span></div>
+            <div class="bar-container"><div class="bar-fill" id="xp-bar" style="width: 0%"></div></div>
         </div>
 
-        <div style="margin-top: 12px;">
-            <div class="quick-btn" onclick="quickSend('осмотреться')">ОСМОТРЕТЬСЯ</div>
-            <div class="quick-btn" onclick="quickSend('статус')">СТАТУС</div>
-            <div class="quick-btn" onclick="quickSend('инвентарь')">ИНВЕНТАРЬ</div>
-            <div class="quick-btn" onclick="quickSend('помощь')">ПОМОЩЬ</div>
-            <div class="quick-btn danger" onclick="quickSend('WIPE PROTOCOL')" style="margin-top: 8px;">WIPE PROTOCOL</div>
+        <div class="hud-panel">
+            <div class="hud-label">ECONOMY</div>
+            <div class="stat-row"><span>Кредиты:</span> <span id="credits" class="stat-val" style="color:var(--warning)">0 CR</span></div>
+            <div class="stat-row"><span>Локация:</span> <span id="location" class="stat-val">...</span></div>
+        </div>
+
+        <div class="hud-panel" id="panel-inv">
+            <div class="hud-label">STORAGE</div>
+            <div id="inventory" style="font-size: 11px; line-height: 1.4; color: #aaa;">Загрузка...</div>
         </div>
     </div>
 
-    <div id="main">
-        <div class="header">JANUS: INITIUM ТЕРМИНАЛ</div>
-        <div id="log">[SYSTEM] JANUS: INITIUM загружен. Ожидание идентификации...</div>
+    <div id="terminal">
+        <div id="log-area">
+            <div class="msg system">
+                [SYSTEM] JANUS CORE v19.2 CONNECTED.<br>
+                [MODE] SANDBOX RPG. PSYOP PROTOCOLS ACTIVE.<br>
+                [STATUS] Ожидание ввода...
+            </div>
+        </div>
 
-        <div id="input-area">
-            <div id="prefix">></div>
-            <input type="text" id="input" placeholder="Введите имя и класс, например: Рипли Наемник" autofocus>
+        <div id="input-zone">
+            <div id="quick-btns">
+                <button class="btn" onclick="send('Осмотреться')">ОСМОТР</button>
+                <button class="btn" onclick="send('Статус')">СТАТУС</button>
+                <button class="btn" onclick="send('Инвентарь')">СУМКА</button>
+                <button class="btn" onclick="send('Задания')">ЗАДАЧИ</button>
+                <button class="btn danger" onclick="send('WIPE PROTOCOL')">СБРОС</button>
+            </div>
+            <div id="cmd-line">
+                <span id="prompt-char">█</span>
+                <input type="text" id="input" placeholder="Действие..." autocomplete="off">
+            </div>
         </div>
     </div>
+</div>
 
 <script>
-    // НАСТРОЙКИ — ПОМЕНЯЙ ТОЛЬКО ЭТУ СТРОКУ
-    const API_BASE = "https://твой-ngrok-адрес.ngrok-free.app"; // ← ВСТАВЬ СВОЙ!
-    const USER_ID = "392910542"; // можно менять под разных игроков
+    // ==========================================
+    const API_BASE = "https://supperless-yoshiko-noneruditely.ngrok-free.dev"; 
+    const USER_ID = "392910542"; 
+    // ==========================================
 
-    const log = document.getElementById('log');
-    const input = document.getElementById('input');
-    let isTyping = false;
+    const logEl = document.getElementById('log-area');
+    const inputEl = document.getElementById('input');
+    let isBusy = false;
 
-    // --- Core Functions ---
-
-    function addLine(text, className = '') {
-        const line = document.createElement('div');
-        line.innerHTML = text;
-        if (className) line.className = className;
-        log.appendChild(line);
-        log.scrollTop = log.scrollHeight;
+    // --- UTILS ---
+    function addMsg(html, type = 'ai') {
+        const div = document.createElement('div');
+        div.className = `msg ${type}`;
+        div.innerHTML = html;
+        logEl.appendChild(div);
+        logEl.scrollTop = logEl.scrollHeight;
     }
 
-    function typeText(text, callback) {
-        if (isTyping) return;
-        isTyping = true;
-        let i = 0;
-        const line = document.createElement('div');
-        line.className = 'typing';
-        log.appendChild(line);
-        log.scrollTop = log.scrollHeight;
-
-        const timer = setInterval(() => {
-            if (i < text.length) {
-                line.textContent += text.charAt(i);
-                i++;
-                log.scrollTop = log.scrollHeight;
-            } else {
-                clearInterval(timer);
-                line.className = '';
-                isTyping = false;
-                if (callback) callback();
-            }
-        }, 20); // Скорость набора
+    function formatText(text) {
+        // Markdown parsers
+        let t = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); // Bold
+        t = t.replace(/\*(.*?)\*/g, '<em>$1</em>'); // Italic
+        t = t.replace(/\n/g, '<br>');
+        return t;
     }
 
-    function updateHUD(data) {
-        // Проверка наличия имени/класса для скрытия HUD-заголовков на мобильных
-        const isMobile = window.innerWidth <= 768;
-        if (isMobile) {
-             ['block-persona', 'block-status', 'block-location', 'block-inventory'].forEach(id => {
-                const block = document.getElementById(id);
-                if (block) block.style.display = 'block';
-            });
+    function updateHUD(d) {
+        if(!d) return;
+        // Text updates
+        if(d.name) document.getElementById('name').textContent = d.name;
+        if(d.class_type) document.getElementById('class').textContent = d.class_type;
+        if(d.lvl !== undefined) document.getElementById('lvl').textContent = d.lvl;
+        if(d.credits !== undefined) document.getElementById('credits').textContent = d.credits + " CR";
+        if(d.loc) document.getElementById('location').textContent = d.loc;
+        
+        // Bars
+        if(d.hp !== undefined) {
+            document.getElementById('hp-val').textContent = d.hp;
+            document.getElementById('hp-bar').style.width = d.hp + "%";
         }
         
-        // Обновление значений
-        if (data.name) document.getElementById('name').textContent = data.name;
-        if (data.class_type) document.getElementById('class').textContent = data.class_type; // Используем class_type из API
-        
-        document.getElementById('lvl').textContent = data.lvl || document.getElementById('lvl').textContent;
-        document.getElementById('hp').textContent = data.hp || document.getElementById('hp').textContent;
-        document.getElementById('credits').textContent = data.credits || document.getElementById('credits').textContent;
-        document.getElementById('xp').textContent = data.xp || document.getElementById('xp').textContent;
-        document.getElementById('location').textContent = data.loc || document.getElementById('location').textContent;
-        
-        const inv = data.inv || [];
-        document.getElementById('inventory').innerHTML = inv.length ? inv.join(', ') : '<span style="color:#555">Пусто</span>';
+        // Inventory
+        if(d.inv) {
+            const items = Array.isArray(d.inv) ? d.inv.join(', ') : d.inv;
+            document.getElementById('inventory').textContent = items || "Пусто";
+        }
     }
 
-    async function send(message) {
-        if (!message.trim() || isTyping) return;
-        const cmd = message.trim();
-        addLine(`> ${cmd}`, 'system');
-        input.value = '';
-        input.disabled = true;
+    async function send(cmd = null) {
+        if (isBusy) return;
+        const text = cmd || inputEl.value.trim();
+        if (!text) return;
+
+        // UI Feedback
+        addMsg(text, 'user');
+        inputEl.value = '';
+        isBusy = true;
+        document.getElementById('prompt-char').style.color = 'var(--secondary)'; // Busy color
 
         try {
-            // FIX: Проверка, что API_BASE не является заглушкой
-            if (API_BASE.includes("ngrok-адрес")) {
-                throw new Error("Необходимо изменить API_BASE на ваш реальный адрес ngrok.");
-            }
-
             const res = await fetch(`${API_BASE}/api/rpg/action`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-                body: JSON.stringify({ user_id: USER_ID, message: cmd })
+                body: JSON.stringify({ user_id: USER_ID, message: text })
             });
 
-            if (!res.ok) {
-                 const errorText = await res.text();
-                 throw new Error(`API Error ${res.status}: ${errorText}`);
-            }
-
+            if (!res.ok) throw new Error("Server Error");
             const data = await res.json();
 
             if (data.text) {
-                let text = data.text;
-                // Замена ** и * на span для стилизации
-                text = text.replace(/\*\*(.*?)\*\*/g, '<span class="value">$1</span>');
-                text = text.replace(/\*(.*?)\*/g, '<span class="value">$1</span>');
-                
-                // Проверки для стилизации
-                if (text.includes('[СМЕРТЬ]') || text.includes('[SYSTEM] IDENTITY WIPED')) {
-                    addLine(text, 'death');
-                } else if (text.includes('[LEVEL UP]') || text.includes('[СИСТЕМА] ID подтвержден')) {
-                    addLine(text, 'success');
+                // Если это системное сообщение
+                if (data.text.includes('[СИСТЕМА]')) {
+                    addMsg(formatText(data.text), 'system');
                 } else {
-                    typeText(text);
+                    addMsg(formatText(data.text), 'ai');
                 }
             }
-
+            
             if (data.hud_update) updateHUD(data.hud_update);
 
         } catch (e) {
-            addLine(`[КРИТИЧЕСКАЯ ОШИБКА] ${e.message}`, 'danger');
+            addMsg("[СБОЙ СОЕДИНЕНИЯ] Проверьте Янус-Ядро.", "system");
         } finally {
-            input.disabled = false;
-            input.focus();
+            isBusy = false;
+            document.getElementById('prompt-char').style.color = 'var(--primary)'; // Ready color
+            inputEl.focus();
         }
     }
 
-    function quickSend(text) { send(text); }
+    // Init
+    inputEl.addEventListener('keypress', (e) => { if(e.key === 'Enter') send(); });
+    setTimeout(() => send('Статус'), 800); // Auto-ping on load
 
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') send(input.value); });
-
-    // Обработка начальной загрузки и центровки
-    function init() {
-        // Убедимся, что body имеет 100vh для мобильных (Telegram)
-        document.body.style.height = window.innerHeight + 'px';
-        window.addEventListener('resize', () => {
-            document.body.style.height = window.innerHeight + 'px';
-        });
-
-        // Запуск начальной команды
-        setTimeout(() => send(''), 500); 
-    }
-
-    init();
 </script>
 </body>
 </html>
