@@ -3,132 +3,380 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>JANUS: OMNI-INTERFACE</title>
+    <title>JANUS: IMMERSION</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* НЕЙТРАЛЬНАЯ ПАЛИТРА (Obsidian) */
-            --bg: #050505; --surface: #111111; --border: #333333;
-            --text-main: #eeeeee; --text-dim: #888888; --accent: #ffffff;
-            --font-ui: 'Inter', sans-serif; --font-mono: 'JetBrains Mono', monospace;
+            --bg: #050505;
+            --surface: #121212;
+            --surface-2: #1e1e1e;
+            --accent: #ffffff;
+            --text: #eeeeee;
+            --text-dim: #888888;
+            --border: rgba(255,255,255,0.1);
+            --danger: #ff4444;
+            --success: #44ff88;
+            
+            --safe-area-top: env(safe-area-inset-top);
+            --safe-area-bottom: env(safe-area-inset-bottom);
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; padding: 0; width: 100vw; height: 100dvh; background: var(--bg); color: var(--text-main); font-family: var(--font-ui); display: flex; flex-direction: column; overflow: hidden; }
-        
-        #app-container { display: flex; flex: 1; overflow: hidden; flex-direction: row; }
-        
-        #hud { width: 300px; background: var(--surface); border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; gap: 20px; flex-shrink: 0; }
-        .hud-group { display: flex; flex-direction: column; gap: 8px; }
-        .hud-title { color: var(--text-dim); font-weight: 600; text-transform: uppercase; font-size: 11px; }
-        .stat-row { display: flex; justify-content: space-between; }
-        .stat-val { font-family: var(--font-mono); font-weight: 700; color: var(--accent); }
-        .bar-track { height: 4px; background: #222; width: 100%; border-radius: 2px; overflow: hidden; }
-        .bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.5s; }
-        
-        .bio-btn { display: flex; align-items: center; justify-content: center; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0a; color: var(--text-main); text-decoration: none; font-weight: 600; transition: 0.2s; }
-        .bio-btn:hover { background: #222; border-color: var(--text-dim); }
 
-        #terminal { flex: 1; display: flex; flex-direction: column; background: var(--bg); min-width: 0; }
-        #log-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; font-family: var(--font-mono); }
-        .msg { max-width: 800px; line-height: 1.6; font-size: 14px; animation: fade 0.3s ease; }
-        @keyframes fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .msg.ai { color: var(--text-main); }
-        .msg.user { align-self: flex-end; text-align: right; color: var(--text-dim); border-right: 2px solid var(--border); padding-right: 12px; margin: 10px 0; }
-        .msg.system { align-self: center; font-size: 12px; color: var(--text-dim); border: 1px solid var(--border); padding: 4px 12px; border-radius: 12px; }
-        .queen-msg { margin-top: 10px; padding: 10px; border-left: 2px solid var(--text-dim); background: #0a0a0a; font-family: var(--font-ui); font-style: italic; color: #ccc; }
-
-        #input-zone { padding: 15px 20px; background: var(--surface); border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
-        #cmd-line { display: flex; align-items: center; gap: 12px; background: #080808; border: 1px solid var(--border); border-radius: 6px; padding: 10px 15px; }
-        #input { flex: 1; background: transparent; border: none; color: #fff; font-family: var(--font-mono); font-size: 15px; outline: none; }
-        #quick-btns { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
-        .btn { background: transparent; border: 1px solid var(--border); color: var(--text-dim); padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: 0.2s; font-family: var(--font-ui); }
-        .btn:hover { background: #222; color: #fff; border-color: #555; }
-        .btn.reset { color: #ff4444; border-color: rgba(255, 68, 68, 0.3); }
-
-        @media (max-width: 768px) {
-            #app-container { flex-direction: column; }
-            #hud { width: 100%; height: auto; max-height: 25vh; border-right: none; border-bottom: 1px solid var(--border); flex-direction: row; flex-wrap: wrap; padding: 15px; gap: 15px; }
-            .hud-group { flex: 1; min-width: 120px; }
-            #panel-inv { display: none; }
-            .bio-btn { width: 100%; margin-bottom: 10px; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+        
+        body {
+            margin: 0; padding: 0; width: 100vw; height: 100dvh;
+            background: var(--bg); color: var(--text);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            display: flex; flex-direction: column;
         }
+
+        /* --- HEADER (STATUS BAR) --- */
+        .status-bar {
+            height: 60px;
+            padding: calc(10px + var(--safe-area-top)) 20px 10px 20px;
+            background: rgba(18, 18, 18, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100;
+            position: absolute; top: 0; width: 100%;
+        }
+
+        .char-info { display: flex; flex-direction: column; }
+        .char-name { font-weight: 700; font-size: 14px; letter-spacing: 0.5px; }
+        .char-loc { font-size: 11px; color: var(--text-dim); display: flex; align-items: center; gap: 5px; }
+        .online-dot { width: 6px; height: 6px; background: var(--success); border-radius: 50%; box-shadow: 0 0 5px var(--success); }
+
+        .resources { display: flex; gap: 15px; align-items: center; }
+        .res-item { display: flex; flex-direction: column; align-items: flex-end; }
+        .res-val { font-family: 'JetBrains Mono'; font-weight: 700; font-size: 13px; }
+        .res-label { font-size: 9px; color: var(--text-dim); text-transform: uppercase; }
+
+        /* --- CHAT AREA --- */
+        #chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 80px 15px 100px 15px; /* Padding for header and footer */
+            display: flex; flex-direction: column; gap: 15px;
+            scroll-behavior: smooth;
+        }
+
+        .msg {
+            max-width: 90%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.5;
+            position: relative;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .msg.ai {
+            background: var(--surface-2);
+            color: var(--text);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .msg.user {
+            background: var(--accent);
+            color: #000;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+            font-weight: 500;
+        }
+
+        .msg.system {
+            align-self: center;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 11px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 100%;
+        }
+
+        .queen-flavor {
+            display: block; margin-top: 8px; padding-top: 8px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-style: italic; font-size: 12px; color: #ff99aa;
+        }
+
+        /* --- BOTTOM DOCK (MENU) --- */
+        .bottom-dock {
+            position: absolute; bottom: 0; width: 100%;
+            background: rgba(18, 18, 18, 0.95);
+            backdrop-filter: blur(15px);
+            border-top: 1px solid var(--border);
+            padding-bottom: var(--safe-area-bottom);
+            z-index: 100;
+            display: flex; flex-direction: column;
+        }
+
+        .input-bar {
+            padding: 10px 15px;
+            display: flex; gap: 10px; align-items: center;
+        }
+
+        #main-input {
+            flex: 1;
+            background: #000;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 12px 15px;
+            color: #fff;
+            font-size: 15px;
+            outline: none;
+            transition: 0.3s;
+        }
+        #main-input:focus { border-color: var(--text-dim); }
+
+        .send-btn {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer;
+            color: #000;
+            transition: 0.2s;
+        }
+        .send-btn:active { transform: scale(0.9); }
+
+        .menu-grid {
+            display: flex; justify-content: space-around;
+            padding: 10px 0;
+            border-top: 1px solid var(--border);
+        }
+
+        .menu-item {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            color: var(--text-dim);
+            font-size: 10px;
+            cursor: pointer;
+            width: 60px;
+        }
+        .menu-item.active { color: var(--accent); }
+        .menu-icon { font-size: 20px; }
+
+        /* --- MODALS / PANELS (SLIDING) --- */
+        .panel-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 900;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .panel-overlay.visible { opacity: 1; pointer-events: auto; }
+
+        .sliding-panel {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: #151515;
+            border-top-left-radius: 20px; border-top-right-radius: 20px;
+            border-top: 1px solid var(--border);
+            padding: 20px;
+            padding-bottom: 40px;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 1000;
+            max-height: 80vh; overflow-y: auto;
+        }
+        .sliding-panel.open { transform: translateY(0); }
+
+        .panel-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px;
+        }
+        .panel-title { font-size: 18px; font-weight: 700; color: var(--accent); }
+        .close-panel { background: transparent; border: none; color: var(--text-dim); font-size: 24px; padding: 5px; }
+
+        /* --- INVENTORY GRID --- */
+        .inv-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+        }
+        .inv-slot {
+            aspect-ratio: 1;
+            background: #222;
+            border-radius: 12px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 24px;
+            border: 1px solid var(--border);
+        }
+        .inv-item-name { font-size: 12px; color: var(--text-dim); margin-top: 5px; text-align: center; }
+
+        /* --- PROFILE STATS --- */
+        .stat-bar-container { margin-bottom: 15px; }
+        .sb-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; color: var(--text-dim); }
+        .sb-track { height: 8px; background: #222; border-radius: 4px; overflow: hidden; }
+        .sb-fill { height: 100%; background: var(--accent); width: 50%; transition: width 0.5s; }
+        
+        .action-list button {
+            width: 100%; padding: 15px; text-align: left;
+            background: var(--surface-2); border: 1px solid var(--border);
+            border-radius: 12px; color: var(--text); margin-bottom: 10px;
+            font-size: 14px; font-weight: 500;
+        }
+        .action-list button:active { background: #333; }
+
     </style>
 </head>
 <body>
 
-<div id="app-container">
-    <div id="hud">
-        <a href="https://hawkar-usls.github.io/iNaiHR-Janus-/" target="_blank" class="bio-btn">
-            <span>◆</span> ОТКРЫТЬ ДОСЬЕ
-        </a>
-
-        <div class="hud-group">
-            <div class="hud-title">СУБЪЕКТ</div>
-            <div class="stat-row"><span>Имя</span> <span class="stat-val" id="name">...</span></div>
-            <div class="stat-row"><span>Архетип</span> <span class="stat-val" id="class">...</span></div>
-            <div class="stat-row"><span>Уровень</span> <span class="stat-val" id="lvl">1</span></div>
+    <div class="status-bar">
+        <div class="char-info">
+            <div class="char-name" id="hud-name">Загрузка...</div>
+            <div class="char-loc"><div class="online-dot"></div> <span id="hud-loc">...</span></div>
         </div>
-
-        <div class="hud-group">
-            <div class="hud-title">СОСТОЯНИЕ</div>
-            <div class="stat-row"><span>HP</span> <span class="stat-val" id="hp-val">100%</span></div>
-            <div class="bar-track"><div class="bar-fill" id="hp-bar" style="width: 100%"></div></div>
-            <div class="stat-row" style="margin-top: 5px;"><span>XP</span> <span class="stat-val" id="xp-val">0</span></div>
-            <div class="bar-track"><div class="bar-fill" id="xp-bar" style="width: 0%; opacity: 0.5;"></div></div>
-        </div>
-
-        <div class="hud-group">
-            <div class="hud-title">РЕСУРСЫ</div>
-            <div class="stat-row"><span>Баланс</span> <span class="stat-val" id="credits">0</span></div>
-            <div class="stat-row"><span>Локация</span> <span class="stat-val" id="location">Unknown</span></div>
-        </div>
-
-        <div class="hud-group" id="panel-inv">
-            <div class="hud-title">ИНВЕНТАРЬ</div>
-            <div id="inventory" style="color: var(--text-dim); line-height: 1.4;">Пусто</div>
-        </div>
-    </div>
-
-    <div id="terminal">
-        <div id="log-area">
-            <div class="msg system">
-                JANUS CORE CONNECTED. WAITING FOR INPUT.
+        <div class="resources">
+            <div class="res-item">
+                <span class="res-val" id="hud-hp">100%</span>
+                <span class="res-label">HP</span>
             </div>
-        </div>
-
-        <div id="input-zone">
-            <div id="quick-btns">
-                <button class="btn" onclick="send('Осмотреться')">Осмотр</button>
-                <button class="btn" onclick="send('Статус')">Статус</button>
-                <button class="btn" onclick="send('Инвентарь')">Вещи</button>
-                <button class="btn reset" onclick="send('WIPE PROTOCOL')">Сброс Мира</button>
-            </div>
-            <div id="cmd-line">
-                <span style="color: var(--text-dim)">></span>
-                <input type="text" id="input" placeholder="Напишите действие..." autocomplete="off">
+            <div class="res-item">
+                <span class="res-val" style="color: #ffd700;" id="hud-money">0</span>
+                <span class="res-label">CR</span>
             </div>
         </div>
     </div>
-</div>
+
+    <div id="chat-container">
+        <div class="msg system">
+            JANUS LINK ESTABLISHED.<br>MODE: IMMERSIVE.
+        </div>
+        </div>
+
+    <div class="bottom-dock">
+        <div class="input-bar">
+            <input type="text" id="main-input" placeholder="Ваши действия..." autocomplete="off">
+            <button class="send-btn" onclick="sendMessage()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+        </div>
+
+        <div class="menu-grid">
+            <div class="menu-item" onclick="openPanel('panel-profile')">
+                <div class="menu-icon">👤</div>
+                <span>Герой</span>
+            </div>
+            <div class="menu-item" onclick="openPanel('panel-inventory')">
+                <div class="menu-icon">🎒</div>
+                <span>Сумка</span>
+            </div>
+            <div class="menu-item" onclick="sendMessage('Осмотреться')">
+                <div class="menu-icon">👁️</div>
+                <span>Осмотр</span>
+            </div>
+            <div class="menu-item" onclick="openPanel('panel-system')">
+                <div class="menu-icon">⚙️</div>
+                <span>Меню</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel-overlay" id="overlay" onclick="closeAllPanels()"></div>
+
+    <div class="sliding-panel" id="panel-profile">
+        <div class="panel-header">
+            <div class="panel-title">Досье</div>
+            <button class="close-panel" onclick="closeAllPanels()">×</button>
+        </div>
+        
+        <div class="stat-bar-container">
+            <div class="sb-header"><span>Здоровье</span><span id="prof-hp">100/100</span></div>
+            <div class="sb-track"><div class="sb-fill" style="width: 100%; background: #ff4444;" id="bar-hp"></div></div>
+        </div>
+        <div class="stat-bar-container">
+            <div class="sb-header"><span>Опыт / Ранг</span><span id="prof-xp">0</span></div>
+            <div class="sb-track"><div class="sb-fill" style="width: 0%; background: #4488ff;" id="bar-xp"></div></div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <div style="color: var(--text-dim); font-size: 12px; margin-bottom: 5px;">КЛАСС / АРХЕТИП</div>
+            <div style="font-size: 16px; font-weight: 700;" id="prof-class">Неизвестно</div>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <a href="https://hawkar-usls.github.io/iNaiHR-Janus-/" target="_blank" style="text-decoration: none;">
+                <button style="width: 100%; padding: 15px; background: #222; border: 1px solid var(--border); color: #fff; border-radius: 10px; font-weight: 600;">
+                    🧠 Открыть iNaiHR
+                </button>
+            </a>
+        </div>
+    </div>
+
+    <div class="sliding-panel" id="panel-inventory">
+        <div class="panel-header">
+            <div class="panel-title">Инвентарь</div>
+            <button class="close-panel" onclick="closeAllPanels()">×</button>
+        </div>
+        <div id="inv-container" class="inv-grid">
+            <div style="grid-column: span 4; text-align: center; color: #555; padding: 20px;">Пусто</div>
+        </div>
+    </div>
+
+    <div class="sliding-panel" id="panel-system">
+        <div class="panel-header">
+            <div class="panel-title">Система</div>
+            <button class="close-panel" onclick="closeAllPanels()">×</button>
+        </div>
+        <div class="action-list">
+            <button onclick="sendMessage('Статус'); closeAllPanels()">🔄 Обновить статус</button>
+            <button onclick="sendMessage('Помощь'); closeAllPanels()">❓ Помощь</button>
+            <button onclick="sendMessage('WIPE PROTOCOL'); closeAllPanels()" style="color: #ff4444; border-color: rgba(255,68,68,0.3)">⚠️ Сброс прогресса</button>
+        </div>
+    </div>
 
 <script>
     // ==========================================
-    // ВСТАВЬ СЮДА NGROK
+    // НАСТРОЙКИ (ВСТАВЬ СВОЙ NGROK)
     const API_BASE = "https://supperless-yoshiko-noneruditely.ngrok-free.dev";
-    const USER_ID = window.Telegram.WebApp.initDataUnsafe?.user?.id || "392910542"; 
     // ==========================================
 
-    const logEl = document.getElementById('log-area');
-    const inputEl = document.getElementById('input');
-    let isBusy = false;
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    tg.setHeaderColor('#121212');
+    tg.setBackgroundColor('#050505');
+    
+    const USER_ID = tg.initDataUnsafe?.user?.id || "392910542";
+    const chatContainer = document.getElementById('chat-container');
+    const inputEl = document.getElementById('main-input');
 
-    function addMsg(html, type = 'ai') {
+    // --- HAPTICS ---
+    function vibrate(style = 'light') {
+        if (tg.HapticFeedback) {
+            tg.HapticFeedback.impactOccurred(style);
+        } else if (navigator.vibrate) {
+            navigator.vibrate(10);
+        }
+    }
+
+    // --- UI LOGIC ---
+    function openPanel(id) {
+        vibrate('medium');
+        document.getElementById('overlay').classList.add('visible');
+        document.getElementById(id).classList.add('open');
+    }
+
+    function closeAllPanels() {
+        document.getElementById('overlay').classList.remove('visible');
+        document.querySelectorAll('.sliding-panel').forEach(p => p.classList.remove('open'));
+    }
+
+    function addMessage(html, type) {
         const div = document.createElement('div');
         div.className = `msg ${type}`;
         div.innerHTML = html;
-        logEl.appendChild(div);
-        logEl.scrollTop = logEl.scrollHeight;
+        chatContainer.appendChild(div);
+        
+        // Auto scroll
+        setTimeout(() => {
+            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+        }, 100);
     }
 
     function formatText(text) {
@@ -136,37 +384,54 @@
         let t = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         t = t.replace(/\*(.*?)\*/g, '<em>$1</em>');
         t = t.replace(/\n/g, '<br>');
-        t = t.replace(/\[QUEEN\]/g, '<div class="queen-msg">');
-        if (t.includes('<div class="queen-msg">')) t += '</div>';
+        t = t.replace(/\[QUEEN\]/g, '<span class="queen-flavor">👸 ');
+        if (t.includes('class="queen-flavor"')) t += '</span>';
         return t;
     }
 
+    // --- UPDATE UI ---
     function updateHUD(d) {
         if(!d) return;
-        if(d.name) document.getElementById('name').textContent = d.name;
-        if(d.class_type) document.getElementById('class').textContent = d.class_type;
-        if(d.lvl !== undefined) document.getElementById('lvl').textContent = d.lvl;
-        if(d.credits !== undefined) document.getElementById('credits').textContent = d.credits;
-        if(d.loc) document.getElementById('location').textContent = d.loc;
         
-        if(d.hp !== undefined) {
-            document.getElementById('hp-val').textContent = d.hp + "%";
-            document.getElementById('hp-bar').style.width = d.hp + "%";
-        }
-        if(d.inv) {
-            const items = Array.isArray(d.inv) ? d.inv.join(', ') : d.inv;
-            document.getElementById('inventory').textContent = items || "Пусто";
+        // Header
+        if(d.name) document.getElementById('hud-name').textContent = d.name;
+        if(d.loc) document.getElementById('hud-loc').textContent = d.loc;
+        if(d.hp !== undefined) document.getElementById('hud-hp').textContent = d.hp + "%";
+        if(d.credits !== undefined) document.getElementById('hud-money').textContent = d.credits;
+
+        // Profile Panel
+        if(d.hp !== undefined) document.getElementById('bar-hp').style.width = d.hp + "%";
+        if(d.class_type) document.getElementById('prof-class').textContent = d.class_type;
+        document.getElementById('prof-hp').textContent = (d.hp || 100) + "/100";
+
+        // Inventory
+        if(d.inv && Array.isArray(d.inv)) {
+            const container = document.getElementById('inv-container');
+            container.innerHTML = "";
+            if (d.inv.length === 0) {
+                container.innerHTML = '<div style="grid-column: span 4; text-align: center; color: #555; padding: 20px;">Пусто</div>';
+            } else {
+                d.inv.forEach(item => {
+                    const el = document.createElement('div');
+                    el.innerHTML = `
+                        <div class="inv-slot">📦</div>
+                        <div class="inv-item-name">${item}</div>
+                    `;
+                    container.appendChild(el);
+                });
+            }
         }
     }
 
-    async function send(cmd = null) {
-        if (isBusy) return;
-        const text = cmd || inputEl.value.trim();
+    // --- NETWORK ---
+    async function sendMessage(txt = null) {
+        const text = txt || inputEl.value.trim();
         if (!text) return;
 
-        addMsg(text, 'user');
-        inputEl.value = '';
-        isBusy = true;
+        vibrate('light');
+        if (!txt) inputEl.value = '';
+        
+        addMessage(text, 'user');
 
         try {
             const res = await fetch(`${API_BASE}/api/rpg/action`, {
@@ -178,34 +443,37 @@
                 body: JSON.stringify({ user_id: USER_ID, message: text })
             });
 
-            if (!res.ok) {
-                const errText = await res.text();
-                throw new Error(`Server Error: ${res.status} ${errText}`);
-            }
-
+            if (!res.ok) throw new Error("Server Error");
             const data = await res.json();
+
+            vibrate('heavy'); // Success vibration
 
             if (data.text) {
                 let cleanText = data.text.replace('[СИСТЕМА]', '');
                 if (data.text.includes('[СИСТЕМА]')) {
-                    addMsg(formatText(cleanText), 'system');
+                    addMessage(formatText(cleanText), 'system');
                 } else {
-                    addMsg(formatText(cleanText), 'ai');
+                    addMessage(formatText(cleanText), 'ai');
                 }
             }
             if (data.hud_update) updateHUD(data.hud_update);
 
         } catch (e) {
-            addMsg(`[ОШИБКА] ${e.message}`, "system");
-        } finally {
-            isBusy = false;
-            inputEl.focus();
+            vibrate('error');
+            addMessage("Сбой соединения. Проверь сервер.", "system");
         }
     }
 
-    window.Telegram.WebApp.expand();
-    inputEl.addEventListener('keypress', (e) => { if(e.key === 'Enter') send(); });
-    setTimeout(() => { send('Статус'); }, 1000);
+    // Init
+    inputEl.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
+    // Пинг при старте
+    setTimeout(() => { 
+        fetch(`${API_BASE}/api/rpg/action`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                body: JSON.stringify({ user_id: USER_ID, message: 'Статус' })
+        }).then(r=>r.json()).then(d=>updateHUD(d.hud_update)).catch(e=>{});
+    }, 1000);
 
 </script>
 </body>
