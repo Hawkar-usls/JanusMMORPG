@@ -8,133 +8,47 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* НЕЙТРАЛЬНАЯ ПАЛИТРА (Obsidian & Snow) */
-            --bg: #050505;
-            --surface: #111111;
-            --border: #333333;
-            --text-main: #eeeeee;
-            --text-dim: #888888;
-            --accent: #ffffff; 
-            
-            --font-ui: 'Inter', sans-serif;
-            --font-mono: 'JetBrains Mono', monospace;
+            /* НЕЙТРАЛЬНАЯ ПАЛИТРА (Obsidian) */
+            --bg: #050505; --surface: #111111; --border: #333333;
+            --text-main: #eeeeee; --text-dim: #888888; --accent: #ffffff;
+            --font-ui: 'Inter', sans-serif; --font-mono: 'JetBrains Mono', monospace;
         }
-
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-        body {
-            margin: 0; padding: 0; width: 100vw; height: 100dvh;
-            background-color: var(--bg); color: var(--text-main);
-            font-family: var(--font-ui); display: flex; flex-direction: column; overflow: hidden;
-        }
-
-        /* --- LAYOUT --- */
-        #app-container {
-            display: flex; flex: 1; overflow: hidden;
-            flex-direction: row; 
-        }
-
-        /* --- HUD (Левая панель) --- */
-        #hud {
-            width: 300px; background: var(--surface); border-right: 1px solid var(--border);
-            padding: 20px; display: flex; flex-direction: column; gap: 20px;
-            font-size: 13px; flex-shrink: 0;
-        }
-
+        body { margin: 0; padding: 0; width: 100vw; height: 100dvh; background: var(--bg); color: var(--text-main); font-family: var(--font-ui); display: flex; flex-direction: column; overflow: hidden; }
+        
+        #app-container { display: flex; flex: 1; overflow: hidden; flex-direction: row; }
+        
+        #hud { width: 300px; background: var(--surface); border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; gap: 20px; flex-shrink: 0; }
         .hud-group { display: flex; flex-direction: column; gap: 8px; }
-        .hud-title { 
-            color: var(--text-dim); font-weight: 600; text-transform: uppercase; 
-            letter-spacing: 1px; font-size: 11px; margin-bottom: 5px;
-        }
-
-        .stat-row { display: flex; justify-content: space-between; align-items: center; }
+        .hud-title { color: var(--text-dim); font-weight: 600; text-transform: uppercase; font-size: 11px; }
+        .stat-row { display: flex; justify-content: space-between; }
         .stat-val { font-family: var(--font-mono); font-weight: 700; color: var(--accent); }
-
-        /* Полоски (Минимализм) */
-        .bar-track { height: 4px; background: #222; width: 100%; border-radius: 2px; overflow: hidden; margin-top: 5px; }
-        .bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.5s ease; }
-
-        /* Кнопка iNaiHR (Нейтральная) */
-        .bio-btn {
-            display: flex; align-items: center; justify-content: center;
-            padding: 10px; border: 1px solid var(--border); border-radius: 6px;
-            background: #0a0a0a; color: var(--text-main); text-decoration: none;
-            font-weight: 600; transition: 0.2s; gap: 8px;
-        }
+        .bar-track { height: 4px; background: #222; width: 100%; border-radius: 2px; overflow: hidden; }
+        .bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.5s; }
+        
+        .bio-btn { display: flex; align-items: center; justify-content: center; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0a; color: var(--text-main); text-decoration: none; font-weight: 600; transition: 0.2s; }
         .bio-btn:hover { background: #222; border-color: var(--text-dim); }
 
-        /* --- TERMINAL (Правая панель) --- */
-        #terminal {
-            flex: 1; display: flex; flex-direction: column; 
-            background: var(--bg); position: relative; min-width: 0;
-        }
-
-        #log-area {
-            flex: 1; overflow-y: auto; padding: 20px; 
-            display: flex; flex-direction: column; gap: 15px;
-            scroll-behavior: smooth; font-family: var(--font-mono);
-        }
-
+        #terminal { flex: 1; display: flex; flex-direction: column; background: var(--bg); min-width: 0; }
+        #log-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; font-family: var(--font-mono); }
         .msg { max-width: 800px; line-height: 1.6; font-size: 14px; animation: fade 0.3s ease; }
         @keyframes fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
         .msg.ai { color: var(--text-main); }
-        .msg.user { 
-            align-self: flex-end; text-align: right; color: var(--text-dim); 
-            border-right: 2px solid var(--border); padding-right: 12px; margin: 10px 0;
-        }
-        .msg.system { 
-            align-self: center; font-size: 12px; color: var(--text-dim); 
-            border: 1px solid var(--border); padding: 4px 12px; border-radius: 12px;
-        }
+        .msg.user { align-self: flex-end; text-align: right; color: var(--text-dim); border-right: 2px solid var(--border); padding-right: 12px; margin: 10px 0; }
+        .msg.system { align-self: center; font-size: 12px; color: var(--text-dim); border: 1px solid var(--border); padding: 4px 12px; border-radius: 12px; }
+        .queen-msg { margin-top: 10px; padding: 10px; border-left: 2px solid var(--text-dim); background: #0a0a0a; font-family: var(--font-ui); font-style: italic; color: #ccc; }
 
-        /* Выделения в тексте */
-        .msg strong { color: #fff; font-weight: 700; }
-        .msg em { font-style: italic; color: #aaa; }
-
-        /* Королева */
-        .queen-msg {
-            margin-top: 10px; padding: 10px; 
-            border-left: 2px solid var(--text-dim); background: #0a0a0a;
-            font-family: var(--font-ui); font-style: italic; color: #ccc;
-        }
-
-        /* --- INPUT ZONE --- */
-        #input-zone {
-            padding: 15px 20px; background: var(--surface); border-top: 1px solid var(--border);
-            display: flex; flex-direction: column; gap: 10px;
-        }
-
-        #cmd-line {
-            display: flex; align-items: center; gap: 12px;
-            background: #080808; border: 1px solid var(--border); border-radius: 6px;
-            padding: 10px 15px; transition: border 0.2s;
-        }
-        #cmd-line:focus-within { border-color: var(--text-dim); }
-
-        #input {
-            flex: 1; background: transparent; border: none; color: #fff;
-            font-family: var(--font-mono); font-size: 15px; outline: none;
-        }
-
+        #input-zone { padding: 15px 20px; background: var(--surface); border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+        #cmd-line { display: flex; align-items: center; gap: 12px; background: #080808; border: 1px solid var(--border); border-radius: 6px; padding: 10px 15px; }
+        #input { flex: 1; background: transparent; border: none; color: #fff; font-family: var(--font-mono); font-size: 15px; outline: none; }
         #quick-btns { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
-        
-        .btn {
-            background: transparent; border: 1px solid var(--border); color: var(--text-dim);
-            padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;
-            cursor: pointer; white-space: nowrap; transition: 0.2s; font-family: var(--font-ui);
-        }
+        .btn { background: transparent; border: 1px solid var(--border); color: var(--text-dim); padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: 0.2s; font-family: var(--font-ui); }
         .btn:hover { background: #222; color: #fff; border-color: #555; }
         .btn.reset { color: #ff4444; border-color: rgba(255, 68, 68, 0.3); }
-        .btn.reset:hover { background: rgba(255, 68, 68, 0.1); border-color: #ff4444; }
 
-        /* --- MOBILE --- */
         @media (max-width: 768px) {
             #app-container { flex-direction: column; }
-            #hud { 
-                width: 100%; height: auto; max-height: 25vh; border-right: none; border-bottom: 1px solid var(--border);
-                flex-direction: row; flex-wrap: wrap; padding: 15px; gap: 15px;
-            }
+            #hud { width: 100%; height: auto; max-height: 25vh; border-right: none; border-bottom: 1px solid var(--border); flex-direction: row; flex-wrap: wrap; padding: 15px; gap: 15px; }
             .hud-group { flex: 1; min-width: 120px; }
             #panel-inv { display: none; }
             .bio-btn { width: 100%; margin-bottom: 10px; }
@@ -209,7 +123,6 @@
     const inputEl = document.getElementById('input');
     let isBusy = false;
 
-    // --- UTILS ---
     function addMsg(html, type = 'ai') {
         const div = document.createElement('div');
         div.className = `msg ${type}`;
@@ -223,7 +136,6 @@
         let t = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         t = t.replace(/\*(.*?)\*/g, '<em>$1</em>');
         t = t.replace(/\n/g, '<br>');
-        // Оформление Королевы (нейтральное)
         t = t.replace(/\[QUEEN\]/g, '<div class="queen-msg">');
         if (t.includes('<div class="queen-msg">')) t += '</div>';
         return t;
@@ -266,11 +178,14 @@
                 body: JSON.stringify({ user_id: USER_ID, message: text })
             });
 
-            if (!res.ok) throw new Error("Server Error");
+            if (!res.ok) {
+                const errText = await res.text();
+                throw new Error(`Server Error: ${res.status} ${errText}`);
+            }
+
             const data = await res.json();
 
             if (data.text) {
-                // Убираем маркер [СИСТЕМА], делаем просто стильное сообщение
                 let cleanText = data.text.replace('[СИСТЕМА]', '');
                 if (data.text.includes('[СИСТЕМА]')) {
                     addMsg(formatText(cleanText), 'system');
@@ -281,7 +196,7 @@
             if (data.hud_update) updateHUD(data.hud_update);
 
         } catch (e) {
-            addMsg(`Connection Lost. Retrying...`, "system");
+            addMsg(`[ОШИБКА] ${e.message}`, "system");
         } finally {
             isBusy = false;
             inputEl.focus();
@@ -290,7 +205,7 @@
 
     window.Telegram.WebApp.expand();
     inputEl.addEventListener('keypress', (e) => { if(e.key === 'Enter') send(); });
-    setTimeout(() => { send('Статус'); }, 800);
+    setTimeout(() => { send('Статус'); }, 1000);
 
 </script>
 </body>
