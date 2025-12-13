@@ -2,596 +2,378 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>POCKET SURVIVAL</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>POCKET SURVIVAL: PIXEL</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #111;
-            --ui-bg: rgba(20, 20, 20, 0.95);
-            --ui-border: rgba(255, 255, 255, 0.15);
-            --accent: #f0a500;
-            --danger: #ff4444;
-            --success: #44ff44;
-            --text: #eee;
-        }
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+        body { margin: 0; background: #111; overflow: hidden; font-family: 'Courier New', monospace; touch-action: none; }
+        canvas { display: block; image-rendering: pixelated; }
         
-        body {
-            margin: 0; padding: 0; width: 100vw; height: 100dvh;
-            background: var(--bg); color: var(--text);
-            font-family: 'Inter', sans-serif;
-            overflow: hidden;
-            touch-action: none; /* Отключаем зум и скролл браузера */
-        }
-
-        /* CANVAS LAYER */
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-            image-rendering: pixelated; /* Пиксельный стиль */
-        }
-
-        /* UI HUD LAYER */
-        .hud-top {
-            position: absolute; top: 10px; left: 10px; right: 10px;
-            display: flex; justify-content: space-between;
-            pointer-events: none; /* Пропускаем клики сквозь UI на канвас */
-        }
-
-        .stats-panel {
-            background: var(--ui-bg);
-            border: 1px solid var(--ui-border);
-            border-radius: 8px;
-            padding: 8px 12px;
-            pointer-events: auto;
-            display: flex; gap: 15px;
-            backdrop-filter: blur(4px);
-        }
-
-        .stat-item { display: flex; flex-direction: column; align-items: center; width: 40px; }
-        .stat-label { font-size: 10px; color: #888; margin-bottom: 2px; }
-        .stat-bar { width: 100%; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
-        .stat-fill { height: 100%; transition: width 0.3s; }
-
-        .res-panel {
-            background: var(--ui-bg);
-            border: 1px solid var(--ui-border);
-            border-radius: 8px;
-            padding: 8px;
-            pointer-events: auto;
-            display: flex; flex-direction: column; gap: 4px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-        }
-
-        /* LOG */
-        #game-log {
-            position: absolute; bottom: 100px; left: 10px;
-            width: 200px; height: 100px;
-            pointer-events: none;
-            overflow: hidden;
-            display: flex; flex-direction: column; justify-content: flex-end;
-            text-shadow: 1px 1px 2px #000;
-            font-size: 12px; opacity: 0.8;
-        }
-        .log-entry { margin-top: 2px; animation: fadeOut 5s forwards; }
-        @keyframes fadeOut { 0% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
-
-        /* BOTTOM CONTROLS */
-        .bottom-bar {
-            position: absolute; bottom: 0; left: 0; width: 100%;
-            background: var(--ui-bg);
-            border-top: 1px solid var(--ui-border);
-            padding: 10px 15px 25px 15px; /* Extra bottom for iPhone home bar */
-            display: flex; justify-content: space-around;
-            gap: 10px;
-        }
-
-        .btn {
-            background: #333; border: 1px solid #555;
-            color: white; padding: 10px; border-radius: 8px;
-            flex: 1; text-align: center; font-size: 13px; font-weight: 600;
-            cursor: pointer; position: relative;
-        }
-        .btn:active { transform: scale(0.96); }
-        .btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
-
-        /* Build Menu Overlay */
-        .build-menu {
-            position: absolute; bottom: 90px; left: 10px; right: 10px;
-            background: #1a1a1a; border: 1px solid var(--ui-border);
-            border-radius: 12px; padding: 15px;
-            display: none; grid-template-columns: repeat(4, 1fr); gap: 10px;
-        }
-        .build-menu.visible { display: grid; }
+        /* UI OVERLAY */
+        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         
-        .build-item {
-            background: #252525; border-radius: 8px; padding: 10px;
-            text-align: center; border: 1px solid #333;
-            cursor: pointer;
+        .panel { 
+            background: rgba(20,20,20,0.9); border: 2px solid #444; 
+            padding: 10px; pointer-events: auto; position: absolute; 
+            color: #eee; font-size: 12px;
         }
-        .build-item.selected { border-color: var(--accent); }
-        .build-icon { font-size: 20px; display: block; margin-bottom: 5px; }
-        .build-cost { font-size: 10px; color: #aaa; }
 
+        /* INVENTORY BAR */
+        .hotbar {
+            bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 5px;
+        }
+        .slot {
+            width: 40px; height: 40px; background: #333; border: 2px solid #555;
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
+            position: relative;
+        }
+        .slot.active { border-color: #f0a500; }
+        .slot-icon { font-size: 20px; }
+
+        /* EQUIPMENT MENU */
+        .equip-menu {
+            top: 20px; right: 20px; width: 120px; display: flex; flex-direction: column; gap: 5px;
+        }
+        .equip-btn {
+            background: #333; color: white; border: 1px solid #666; padding: 5px; cursor: pointer; text-align: left;
+        }
+        .equip-btn:hover { background: #444; }
+
+        .stat-bar { height: 4px; background: #333; margin-top: 2px; width: 100px; }
+        .fill { height: 100%; width: 100%; transition: width 0.2s; }
+        .hp .fill { background: #d00; }
     </style>
 </head>
 <body>
 
-    <div class="hud-top">
-        <div class="stats-panel">
-            <div class="stat-item">
-                <span class="stat-label">HP</span>
-                <div class="stat-bar"><div class="stat-fill" id="hp-bar" style="width: 100%; background: #ff4444;"></div></div>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">EDA</span>
-                <div class="stat-bar"><div class="stat-fill" id="hunger-bar" style="width: 90%; background: #ffaa00;"></div></div>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">ENG</span>
-                <div class="stat-bar"><div class="stat-fill" id="energy-bar" style="width: 80%; background: #44aaff;"></div></div>
-            </div>
-        </div>
-
-        <div class="res-panel">
-            <div>🌲 <span id="res-wood">0</span></div>
-            <div>🪨 <span id="res-stone">0</span></div>
-            <div>🍖 <span id="res-food">0</span></div>
-        </div>
-    </div>
-
-    <div id="game-log"></div>
-
-    <div class="build-menu" id="build-menu">
-        <div class="build-item" onclick="selectBuild('wall')">
-            <span class="build-icon">🧱</span>
-            <span class="build-name">Стена</span>
-            <div class="build-cost">5 🌲</div>
-        </div>
-        <div class="build-item" onclick="selectBuild('floor')">
-            <span class="build-icon">⬜</span>
-            <span class="build-name">Пол</span>
-            <div class="build-cost">2 🌲</div>
-        </div>
-        <div class="build-item" onclick="selectBuild('fire')">
-            <span class="build-icon">🔥</span>
-            <span class="build-name">Костер</span>
-            <div class="build-cost">10 🌲 5 🪨</div>
-        </div>
-        <div class="build-item" onclick="selectBuild('bed')">
-            <span class="build-icon">🛏️</span>
-            <span class="build-name">Лежак</span>
-            <div class="build-cost">20 🌲</div>
-        </div>
-    </div>
-
     <canvas id="game"></canvas>
 
-    <div class="bottom-bar">
-        <div class="btn active" id="mode-move" onclick="setMode('move')">🖐 Действие</div>
-        <div class="btn" id="mode-build" onclick="setMode('build')">🔨 Стройка</div>
-        <div class="btn" onclick="eatFood()">🍖 Есть</div>
+    <div class="ui-layer">
+        <div class="panel" style="top: 10px; left: 10px;">
+            <div>HP <div class="stat-bar hp"><div class="fill" id="hp-val"></div></div></div>
+            <div style="margin-top:5px; color:#aaa;" id="debug-info">X:0 Y:0</div>
+        </div>
+
+        <div class="panel equip-menu">
+            <div style="color:#888; margin-bottom:5px;">ЭКИПИРОВКА</div>
+            <button class="equip-btn" onclick="equip('none')">Снять всё</button>
+            <button class="equip-btn" onclick="equip('armor')">Броня (Кевлар)</button>
+            <div style="color:#888; margin:5px 0;">ОРУЖИЕ</div>
+            <button class="equip-btn" onclick="equipWeapon('pistol')">Пистолет</button>
+            <button class="equip-btn" onclick="equipWeapon('rifle')">Винтовка AR</button>
+            <button class="equip-btn" onclick="equipWeapon('sword')">Катана</button>
+        </div>
+
+        <div class="panel hotbar">
+            <div class="slot active" onclick="setMode('move')"><span class="slot-icon">🦶</span></div>
+            <div class="slot" onclick="setMode('build')"><span class="slot-icon">🧱</span></div>
+            <div class="slot" onclick="setMode('attack')"><span class="slot-icon">🎯</span></div>
+        </div>
     </div>
 
 <script>
-    // --- TELEGRAM INIT ---
-    const tg = window.Telegram.WebApp;
-    tg.expand();
-    tg.ready();
-    const USER_ID = tg.initDataUnsafe?.user?.id || "local_dev";
-
-    // --- ENGINE CONSTANTS ---
-    const TILE_SIZE = 48; // Размер клетки
-    const MAP_SIZE = 60;  // Размер карты
-    const VIEWPORT_PAD = 2; // Отрисовка за пределами экрана
-    
-    // Типы тайлов
-    const T = {
-        GRASS: 0,
-        WATER: 1,
-        FLOOR: 2,
-        WALL: 3,
-        TREE: 4,
-        ROCK: 5,
-        FIRE: 6
-    };
-
-    // Цвета и спрайты (Эмодзи для простоты)
-    const COLORS = {
-        [T.GRASS]: '#2d3e26',
-        [T.WATER]: '#1ca3ec',
-        [T.FLOOR]: '#4a3b2a',
-        [T.WALL]: '#666',
-        [T.TREE]: '#2d3e26', // Фон под деревом
-        [T.ROCK]: '#2d3e26',
-        [T.FIRE]: '#4a3b2a'
-    };
-
-    const SPRITES = {
-        [T.TREE]: '🌲',
-        [T.ROCK]: '🪨',
-        [T.WALL]: '🧱',
-        [T.FIRE]: '🔥',
-        [T.WATER]: '🌊'
-    };
-
-    // --- STATE ---
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
-    
-    let camera = { x: 0, y: 0 };
-    let mode = 'move'; // move, build
-    let buildTarget = null;
-    let lastTime = 0;
 
-    // Player State
+    // Настройки
+    const SCALE = 3; // Масштаб пикселей
+    const TILE = 16 * SCALE; // Размер клетки мира
+    
+    // Состояние игры
+    let camera = { x: 0, y: 0 };
+    let mouse = { x: 0, y: 0 };
+    let mode = 'move'; // move, build, attack
+
+    // ИГРОК
     const player = {
-        x: Math.floor(MAP_SIZE/2),
-        y: Math.floor(MAP_SIZE/2),
-        targetX: null,
-        targetY: null,
-        moveTimer: 0,
-        speed: 150, // ms per tile
-        hp: 100,
-        hunger: 100,
-        energy: 100,
-        inv: { wood: 0, stone: 0, food: 0 }
+        x: 400,
+        y: 300,
+        vx: 0,
+        vy: 0,
+        speed: 3, // Пикселей за кадр
+        target: null, // {x, y}
+        facing: 1, // 1 = right, -1 = left
+        animTimer: 0,
+        state: 'idle', // idle, run
+        
+        // Визуальная экипировка (Paper Doll)
+        equip: {
+            body: 'skin', // skin
+            chest: null,  // null, 'armor'
+            weapon: null  // null, 'pistol', 'rifle', 'sword'
+        }
     };
 
-    // Map Data
-    const map = [];
-    const objects = []; // {x, y, type, hp}
+    // Объекты мира (для теста рендеринга)
+    const objects = [];
+    for(let i=0; i<20; i++) {
+        objects.push({
+            x: Math.random() * 2000, 
+            y: Math.random() * 2000,
+            type: Math.random() > 0.5 ? 'tree' : 'rock'
+        });
+    }
 
-    // --- INITIALIZATION ---
     function init() {
         resize();
-        generateMap();
         window.addEventListener('resize', resize);
-        // Input handlers
+        
+        // Управление (Мышь / Тач)
         canvas.addEventListener('pointerdown', handleInput);
         
-        // Loop
         requestAnimationFrame(loop);
-        
-        // Stats ticker
-        setInterval(() => {
-            player.hunger = Math.max(0, player.hunger - 1);
-            player.energy = Math.max(0, player.energy - 0.5);
-            if(player.hunger === 0) player.hp = Math.max(0, player.hp - 1);
-            updateHUD();
-        }, 2000);
     }
 
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        // Отключаем сглаживание для пиксель-арта
-        ctx.imageSmoothingEnabled = false;
+        ctx.imageSmoothingEnabled = false; // Важно для пикселей!
     }
 
-    // --- GENERATION ---
-    function generateMap() {
-        for(let x=0; x<MAP_SIZE; x++) {
-            map[x] = [];
-            for(let y=0; y<MAP_SIZE; y++) {
-                // Шум воды
-                if(Math.random() < 0.05) {
-                    map[x][y] = T.WATER;
-                } else {
-                    map[x][y] = T.GRASS;
-                    // Генерация объектов
-                    if(Math.random() < 0.15) {
-                        objects.push({x, y, type: T.TREE, hp: 3});
-                    } else if (Math.random() < 0.05) {
-                        objects.push({x, y, type: T.ROCK, hp: 4});
-                    }
-                }
-            }
+    function handleInput(e) {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left + camera.x;
+        const my = e.clientY - rect.top + camera.y;
+
+        if (mode === 'move') {
+            player.target = { x: mx, y: my };
+            // Эффект клика
+            effects.push({x: mx, y: my, time: 20});
         }
-        // Очищаем спавн
-        const pc = Math.floor(MAP_SIZE/2);
-        map[pc][pc] = T.GRASS;
-        removeObjectAt(pc, pc);
     }
 
-    function removeObjectAt(x, y) {
-        const idx = objects.findIndex(o => o.x === x && o.y === y);
-        if(idx !== -1) objects.splice(idx, 1);
-    }
-    
-    function getObjectAt(x, y) {
-        return objects.find(o => o.x === x && o.y === y);
-    }
-
-    // --- GAME LOGIC ---
-    function loop(timestamp) {
-        const dt = timestamp - lastTime;
-        lastTime = timestamp;
-
-        updatePlayer(dt);
-        updateCamera();
+    // --- GAME LOOP ---
+    function loop() {
+        update();
         render();
-
         requestAnimationFrame(loop);
     }
 
-    function updatePlayer(dt) {
-        if (player.targetX !== null && player.targetY !== null) {
-            player.moveTimer += dt;
-            if (player.moveTimer > player.speed) {
-                player.moveTimer = 0;
+    function update() {
+        // Движение игрока
+        if (player.target) {
+            const dx = player.target.x - player.x;
+            const dy = player.target.y - player.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+
+            if (dist > player.speed) {
+                player.state = 'run';
+                player.animTimer += 0.2;
                 
-                // Simple movement logic (one step closer)
-                const dx = Math.sign(player.targetX - player.x);
-                const dy = Math.sign(player.targetY - player.y);
-                
-                let nextX = player.x + dx;
-                let nextY = player.y + dy;
+                // Нормализация вектора
+                const vx = (dx / dist) * player.speed;
+                const vy = (dy / dist) * player.speed;
 
-                // Move X first if possible
-                if(dx !== 0 && canWalk(nextX, player.y)) {
-                    player.x += dx;
-                } else if (dy !== 0 && canWalk(player.x, nextY)) {
-                    player.y += dy;
-                }
+                player.x += vx;
+                player.y += vy;
 
-                // Check arrival
-                if (player.x === player.targetX && player.y === player.targetY) {
-                    // Arrived - perform action
-                    player.targetX = null;
-                    player.targetY = null;
-                    performActionAt(player.x, player.y);
-                }
+                // Поворот спрайта
+                if(vx > 0.1) player.facing = 1;
+                if(vx < -0.1) player.facing = -1;
+            } else {
+                player.x = player.target.x;
+                player.y = player.target.y;
+                player.target = null;
+                player.state = 'idle';
+                player.animTimer = 0;
             }
         }
+
+        // Камера (плавное слежение)
+        const targetCamX = player.x - canvas.width / 2;
+        const targetCamY = player.y - canvas.height / 2;
+        camera.x += (targetCamX - camera.x) * 0.1;
+        camera.y += (targetCamY - camera.y) * 0.1;
+
+        // UI Update
+        document.getElementById('debug-info').innerText = `POS: ${Math.floor(player.x)}, ${Math.floor(player.y)}`;
     }
 
-    function canWalk(x, y) {
-        if(x < 0 || y < 0 || x >= MAP_SIZE || y >= MAP_SIZE) return false;
-        if(map[x][y] === T.WATER) return false;
-        // Нельзя ходить сквозь камни, но можно сквозь деревья (чтобы рубить стоя на них)
-        const obj = getObjectAt(x, y);
-        if(obj && (obj.type === T.ROCK || obj.type === T.WALL)) return false;
-        return true;
-    }
-
-    function updateCamera() {
-        // Камера центрируется на игроке
-        const cx = player.x * TILE_SIZE + TILE_SIZE/2;
-        const cy = player.y * TILE_SIZE + TILE_SIZE/2;
-        
-        camera.x = cx - canvas.width / 2;
-        camera.y = cy - canvas.height / 2;
-    }
-
-    // --- INTERACTION ---
-    function handleInput(e) {
-        const rect = canvas.getBoundingClientRect();
-        const clickX = e.clientX - rect.left + camera.x;
-        const clickY = e.clientY - rect.top + camera.y;
-
-        const tileX = Math.floor(clickX / TILE_SIZE);
-        const tileY = Math.floor(clickY / TILE_SIZE);
-
-        if(tileX < 0 || tileX >= MAP_SIZE || tileY < 0 || tileY >= MAP_SIZE) return;
-
-        if (mode === 'move') {
-            // Идем и взаимодействуем
-            player.targetX = tileX;
-            player.targetY = tileY;
-            
-            // Визуальный фидбек клика
-            createParticle(tileX, tileY, '📍');
-        } 
-        else if (mode === 'build' && buildTarget) {
-            tryBuild(tileX, tileY, buildTarget);
-        }
-    }
-
-    function performActionAt(x, y) {
-        const obj = getObjectAt(x, y);
-        if(obj) {
-            if(obj.type === T.TREE) {
-                log("Рубим дерево...");
-                player.inv.wood += 2;
-                player.energy -= 2;
-                removeObjectAt(x, y);
-                createParticle(x, y, '🪵');
-            } else if (obj.type === T.ROCK) {
-                log("Добываем камень...");
-                player.inv.stone += 1;
-                player.energy -= 3;
-                removeObjectAt(x, y);
-                createParticle(x, y, '⛏️');
-            }
-        } else {
-            // Если тайл пустой и есть шанс найти еду
-            if(map[x][y] === T.GRASS && Math.random() < 0.3) {
-                log("Найдена ягода");
-                player.inv.food += 1;
-                createParticle(x, y, '🍒');
-            }
-        }
-        updateHUD();
-    }
-
-    function tryBuild(x, y, type) {
-        // Проверка дистанции (строим рядом)
-        const dist = Math.abs(player.x - x) + Math.abs(player.y - y);
-        if(dist > 2) {
-            log("Слишком далеко!");
-            return;
-        }
-
-        const cost = getBuildCost(type);
-        if(player.inv.wood >= cost.wood && player.inv.stone >= cost.stone) {
-            // Списываем ресурсы
-            player.inv.wood -= cost.wood;
-            player.inv.stone -= cost.stone;
-
-            // Ставим
-            if(type === 'floor') map[x][y] = T.FLOOR;
-            else if(type === 'wall') objects.push({x, y, type: T.WALL, hp: 10});
-            else if(type === 'fire') objects.push({x, y, type: T.FIRE, hp: 5});
-
-            log(`Построено: ${type}`);
-            createParticle(x, y, '🔨');
-            updateHUD();
-        } else {
-            log("Не хватает ресурсов!");
-        }
-    }
-
-    // --- RENDER ---
+    // --- RENDER ENGINE ---
     function render() {
-        // Очистка
-        ctx.fillStyle = '#000';
+        // Фон
+        ctx.fillStyle = '#2d2d2d';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Границы отрисовки
-        const startCol = Math.floor(camera.x / TILE_SIZE);
-        const endCol = startCol + (canvas.width / TILE_SIZE) + 1;
-        const startRow = Math.floor(camera.y / TILE_SIZE);
-        const endRow = startRow + (canvas.height / TILE_SIZE) + 1;
-
-        // Рисуем карту
-        for(let c = startCol; c <= endCol; c++) {
-            for(let r = startRow; r <= endRow; r++) {
-                if(c >= 0 && c < MAP_SIZE && r >= 0 && r < MAP_SIZE) {
-                    const tileType = map[c][r];
-                    const x = c * TILE_SIZE - camera.x;
-                    const y = r * TILE_SIZE - camera.y;
-
-                    // Фон тайла
-                    ctx.fillStyle = COLORS[tileType] || '#f0f';
-                    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                    
-                    // Сетка (опционально)
-                    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-                    ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
-
-                    // Декор воды
-                    if(tileType === T.WATER) {
-                         ctx.font = '20px Arial';
-                         ctx.fillText('🌊', x + 5, y + 30);
-                    }
-                }
-            }
+        
+        // Сетка земли (для ощущения движения)
+        const gridSize = 50;
+        const offsetX = -camera.x % gridSize;
+        const offsetY = -camera.y % gridSize;
+        
+        ctx.beginPath();
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+        for(let x=offsetX; x<canvas.width; x+=gridSize) {
+            ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height);
         }
+        for(let y=offsetY; y<canvas.height; y+=gridSize) {
+            ctx.moveTo(0, y); ctx.lineTo(canvas.width, y);
+        }
+        ctx.stroke();
 
-        // Рисуем объекты
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = '32px Arial';
+        // Рендер объектов (сортировка по Y для глубины)
+        const renderList = [...objects, { ...player, type: 'player' }];
+        renderList.sort((a, b) => a.y - b.y);
 
-        objects.forEach(obj => {
-            const screenX = obj.x * TILE_SIZE - camera.x + TILE_SIZE/2;
-            const screenY = obj.y * TILE_SIZE - camera.y + TILE_SIZE/2 + 4;
-            
-            // Проверка видимости для оптимизации
-            if(screenX > -TILE_SIZE && screenX < canvas.width + TILE_SIZE && 
-               screenY > -TILE_SIZE && screenY < canvas.height + TILE_SIZE) {
-                ctx.fillText(SPRITES[obj.type], screenX, screenY);
+        renderList.forEach(obj => {
+            const screenX = obj.x - camera.x;
+            const screenY = obj.y - camera.y;
+
+            if (obj.type === 'player') {
+                drawPlayer(ctx, screenX, screenY);
+            } else if (obj.type === 'tree') {
+                drawTree(ctx, screenX, screenY);
+            } else if (obj.type === 'rock') {
+                drawRock(ctx, screenX, screenY);
             }
         });
 
-        // Рисуем игрока
-        const px = player.x * TILE_SIZE - camera.x + TILE_SIZE/2;
-        const py = player.y * TILE_SIZE - camera.y + TILE_SIZE/2;
-        
-        ctx.font = '36px Arial';
-        ctx.fillText('👨‍🚀', px, py);
+        // Эффекты
+        renderEffects();
+    }
 
-        // Индикатор цели движения
-        if(player.targetX !== null) {
-            const tx = player.targetX * TILE_SIZE - camera.x + TILE_SIZE/2;
-            const ty = player.targetY * TILE_SIZE - camera.y + TILE_SIZE/2;
-            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    // --- PIXEL ART GENERATOR ---
+    
+    // Рисует прямоугольник "пикселей"
+    function rect(ctx, x, y, w, h, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(Math.floor(x), Math.floor(y), w * SCALE, h * SCALE);
+    }
+
+    function drawPlayer(ctx, x, y) {
+        const s = SCALE;
+        const f = player.facing; // 1 или -1
+        
+        // Анимация подпрыгивания (bobbing)
+        let bobY = 0;
+        let legOffset = 0;
+        
+        if (player.state === 'run') {
+            bobY = Math.sin(player.animTimer) * 1 * s;
+            legOffset = Math.sin(player.animTimer * 2) * 3 * s;
+        }
+
+        // Центрируем отрисовку по ногам
+        const cx = x;
+        const cy = y - (12 * s); 
+
+        ctx.save();
+        
+        // Отражение по горизонтали если смотрим влево
+        if (f === -1) {
+            ctx.translate(cx, cy);
+            ctx.scale(-1, 1);
+            ctx.translate(-cx, -cy);
+        }
+
+        // -- 1. НОГИ --
+        const legColor = '#222'; // Штаны
+        // Левая нога
+        rect(ctx, cx - 2*s, cy + 8*s, 2, 4, legColor);
+        // Правая нога (двигается)
+        rect(ctx, cx + 1*s + (legOffset/s), cy + 8*s, 2, 4, legColor);
+
+        // -- 2. ТЕЛО --
+        let chestColor = '#dcb18c'; // Кожа
+        if (player.equip.chest === 'armor') chestColor = '#3a4a38'; // Военная броня (зеленая)
+        
+        // Торс
+        rect(ctx, cx - 3*s, cy + 2*s + bobY, 6, 6, chestColor);
+        
+        // Если броня, рисуем детали бронежилета
+        if(player.equip.chest === 'armor') {
+             rect(ctx, cx - 1*s, cy + 3*s + bobY, 2, 3, '#252e24'); // Пластина
+        }
+
+        // -- 3. ГОЛОВА --
+        const headY = cy - 4*s + bobY;
+        rect(ctx, cx - 3*s, headY, 6, 6, '#dcb18c'); // Кожа
+        // Волосы / Шлем
+        rect(ctx, cx - 3*s, headY, 6, 2, '#422'); // Темные волосы
+        // Глаза
+        rect(ctx, cx + 1*s, headY + 2*s, 1, 1, '#000');
+
+        // -- 4. ОРУЖИЕ (Слой над телом) --
+        const handY = cy + 4*s + bobY;
+        const handX = cx + 2*s;
+
+        if (player.equip.weapon === 'pistol') {
+            // Пистолет (черный блок)
+            rect(ctx, handX, handY, 4, 2, '#111');
+            rect(ctx, handX+1*s, handY+1*s, 1, 2, '#111'); // Рукоять
+        } 
+        else if (player.equip.weapon === 'rifle') {
+            // Винтовка (длинная)
+            rect(ctx, handX - 2*s, handY, 10, 2, '#111'); // Ствол
+            rect(ctx, handX - 3*s, handY, 2, 3, '#533'); // Приклад (дерево/пластик)
+            rect(ctx, handX + 1*s, handY+2*s, 1, 2, '#000'); // Магазин
+        }
+        else if (player.equip.weapon === 'sword') {
+            // Меч (под углом сложно в пикселях без ротации canvas, сделаем прямым)
+            rect(ctx, handX, handY - 8*s, 2, 10, '#ccc'); // Лезвие
+            rect(ctx, handX-1*s, handY, 4, 1, '#gold'); // Гарда
+            rect(ctx, handX, handY + 1*s, 1, 2, '#533'); // Рукоять
+        }
+
+        ctx.restore();
+        
+        // Имя/Статус
+        ctx.fillStyle = "white";
+        ctx.font = "10px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("Survivor", x, y - 50);
+    }
+
+    // Простые процедурные декорации
+    function drawTree(ctx, x, y) {
+        // Ствол
+        rect(ctx, x-2*SCALE, y-4*SCALE, 4, 4, '#533');
+        // Листва (пирамидкой)
+        rect(ctx, x-6*SCALE, y-14*SCALE, 12, 10, '#2d4e26');
+        rect(ctx, x-4*SCALE, y-18*SCALE, 8, 4, '#3e6e36');
+    }
+
+    function drawRock(ctx, x, y) {
+        rect(ctx, x-3*SCALE, y-3*SCALE, 6, 4, '#777');
+        rect(ctx, x-2*SCALE, y-4*SCALE, 4, 1, '#888');
+    }
+
+    // --- EFFECTS ---
+    let effects = [];
+    function renderEffects() {
+        ctx.strokeStyle = '#f0a500';
+        ctx.lineWidth = 2;
+        effects = effects.filter(e => e.time > 0);
+        effects.forEach(e => {
+            e.time--;
+            const r = (20 - e.time) * 1.5;
             ctx.beginPath();
-            ctx.arc(tx, ty, 5, 0, Math.PI*2);
-            ctx.fill();
+            ctx.arc(e.x - camera.x, e.y - camera.y, r, 0, Math.PI*2);
+            ctx.stroke();
+        });
+    }
+
+    // --- INTERFACE CONTROL ---
+    window.equip = (type) => {
+        if(type === 'none') {
+            player.equip.chest = null;
+        } else {
+            player.equip.chest = type;
         }
-        
-        // Сетка курсора в режиме стройки
-        if(mode === 'build') {
-             // Можно добавить подсветку тайла под курсором (нужно отслеживать pointermove)
-        }
-    }
+    };
 
-    // --- UI FUNCTIONS ---
-    function updateHUD() {
-        document.getElementById('hp-bar').style.width = player.hp + '%';
-        document.getElementById('hunger-bar').style.width = player.hunger + '%';
-        document.getElementById('energy-bar').style.width = player.energy + '%';
-        
-        document.getElementById('res-wood').innerText = player.inv.wood;
-        document.getElementById('res-stone').innerText = player.inv.stone;
-        document.getElementById('res-food').innerText = player.inv.food;
-    }
+    window.equipWeapon = (type) => {
+        player.equip.weapon = type;
+    };
 
-    function log(msg) {
-        const div = document.createElement('div');
-        div.className = 'log-entry';
-        div.innerText = `> ${msg}`;
-        const container = document.getElementById('game-log');
-        container.appendChild(div);
-        if(container.children.length > 5) container.removeChild(container.firstChild);
-    }
-
-    function createParticle(tileX, tileY, symbol) {
-        // Простая заглушка для визуальных эффектов
-    }
-
-    // --- CONTROL MODES ---
-    function setMode(m) {
+    window.setMode = (m) => {
         mode = m;
-        document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(`mode-${m}`).classList.add('active');
-        
-        const menu = document.getElementById('build-menu');
-        if(m === 'build') {
-            menu.classList.add('visible');
-            buildTarget = null;
-        } else {
-            menu.classList.remove('visible');
-        }
-    }
+        document.querySelectorAll('.slot').forEach(s => s.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+    };
 
-    function selectBuild(type) {
-        buildTarget = type;
-        document.querySelectorAll('.build-item').forEach(b => b.classList.remove('selected'));
-        event.currentTarget.classList.add('selected');
-        log(`Выбрано: ${type}`);
-    }
-
-    function getBuildCost(type) {
-        if(type === 'wall') return {wood: 5, stone: 0};
-        if(type === 'floor') return {wood: 2, stone: 0};
-        if(type === 'fire') return {wood: 10, stone: 5};
-        if(type === 'bed') return {wood: 20, stone: 0};
-        return {wood:0, stone:0};
-    }
-
-    function eatFood() {
-        if(player.inv.food > 0) {
-            player.inv.food--;
-            player.hunger = Math.min(100, player.hunger + 20);
-            player.hp = Math.min(100, player.hp + 5);
-            log("Ням-ням! +20 Сытости");
-            updateHUD();
-        } else {
-            log("Нет еды!");
-        }
-    }
-
-    // START
     init();
-
 </script>
 </body>
 </html>
