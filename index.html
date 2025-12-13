@@ -3,50 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POCKET SURVIVAL: BIOMES</title>
+    <title>SURVIVAL CORE</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', monospace; touch-action: none; }
-        canvas { display: block; image-rendering: pixelated; }
-        
-        /* UI LAYERS */
+        :root { --bg: #111; --panel: #1e1e1e; --border: #444; --accent: #f0a500; --text: #eee; }
+        body { margin: 0; background: var(--bg); color: var(--text); overflow: hidden; font-family: 'Courier New', monospace; touch-action: none; user-select: none; }
+        canvas { display: block; image-rendering: pixelated; width: 100%; height: 100%; }
+
+        /* UI OVERLAY */
         .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        
-        .panel { 
-            background: rgba(20,20,20,0.85); border: 2px solid #444; 
-            padding: 8px; pointer-events: auto; position: absolute; 
-            color: #eee; font-size: 10px; backdrop-filter: blur(2px);
-            border-radius: 6px;
-        }
+        .pointer { pointer-events: auto; }
 
-        /* NEEDS BARS */
-        .needs-panel { top: 10px; left: 10px; width: 140px; }
-        .stat-row { display: flex; align-items: center; margin-bottom: 4px; justify-content: space-between; }
-        .stat-label { width: 30px; }
-        .stat-track { flex: 1; height: 6px; background: #333; margin-left: 5px; border-radius: 3px; overflow: hidden; }
-        .stat-fill { height: 100%; width: 100%; transition: width 0.5s; }
-        
-        /* COLORS */
-        .c-hp { background: #d33; }
-        .c-food { background: #fa0; }
-        .c-water { background: #0af; }
-        .c-temp { background: #f60; } /* Changes to cyan in winter */
+        /* HUD */
+        .hud { position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 4px; width: 120px; }
+        .bar-wrap { background: #000; height: 8px; border: 1px solid #333; position: relative; }
+        .bar-fill { height: 100%; transition: width 0.5s; }
+        .c-hp { background: #d33; } .c-food { background: #fa0; } .c-water { background: #0af; }
 
-        /* CONTROLS */
-        .controls { bottom: 20px; right: 20px; display: flex; gap: 10px; }
-        .btn { 
-            width: 50px; height: 50px; background: #333; border: 2px solid #555; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; pointer-events: auto;
+        /* BOTTOM DOCK */
+        .dock { position: absolute; bottom: 20px; left: 0; width: 100%; display: flex; justify-content: center; gap: 15px; pointer-events: auto; }
+        .dock-btn { 
+            width: 50px; height: 50px; background: var(--panel); border: 2px solid var(--border); 
+            border-radius: 8px; font-size: 24px; display: flex; justify-content: center; align-items: center; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5); cursor: pointer;
         }
-        .btn:active { background: #555; transform: scale(0.95); }
-        .btn.toggle-on { border-color: #0f0; background: #242; }
+        .dock-btn:active { transform: scale(0.95); border-color: var(--accent); }
 
-        /* DEBUG/INFO */
-        .biome-tag {
-            position: absolute; top: 10px; right: 10px;
-            padding: 5px 10px; background: rgba(0,0,0,0.5); border-radius: 20px;
-            font-weight: bold; color: #fff; text-transform: uppercase;
+        /* MODALS (Inventory/Craft) */
+        .modal {
+            display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 90%; max-width: 400px; max-height: 80%; background: var(--panel); 
+            border: 2px solid var(--border); box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            flex-direction: column; padding: 10px; border-radius: 4px; pointer-events: auto;
+            z-index: 100;
         }
+        .modal.open { display: flex; }
+        .modal-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
+        .close-btn { color: #f44; cursor: pointer; }
+
+        /* GRID */
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; overflow-y: auto; padding: 5px; }
+        .slot { 
+            aspect-ratio: 1; background: #2a2a2a; border: 1px solid #333; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 10px; cursor: pointer; position: relative;
+        }
+        .slot.selected { border-color: var(--accent); background: #333; }
+        .slot img { width: 60%; image-rendering: pixelated; margin-bottom: 2px; }
+        .count { position: absolute; bottom: 2px; right: 2px; color: #aaa; }
+
+        /* ITEM DETAILS */
+        .details { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); min-height: 60px; display: flex; flex-direction: column; gap: 5px; }
+        .btn-action { background: #333; color: white; border: 1px solid #555; padding: 8px; cursor: pointer; text-align: center; }
+        .btn-action.primary { background: var(--accent); color: #000; border: none; font-weight: bold; }
+        .btn-action:disabled { opacity: 0.5; cursor: default; }
+
+        /* TOAST NOTIFICATIONS */
+        .toast-area { position: absolute; top: 50px; width: 100%; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .toast { background: rgba(0,0,0,0.7); color: #fff; padding: 5px 10px; border-radius: 4px; font-size: 12px; animation: fadeUp 2s forwards; }
+        @keyframes fadeUp { 0%{opacity:1; transform:translateY(0)} 100%{opacity:0; transform:translateY(-20px)} }
+
+        /* BUILD OVERLAY */
+        #build-hint { position: absolute; top: 20px; width: 100%; text-align: center; color: #0f0; font-weight: bold; text-shadow: 1px 1px 0 #000; display: none; }
     </style>
 </head>
 <body>
@@ -54,364 +72,499 @@
     <canvas id="game"></canvas>
 
     <div class="ui-layer">
-        <div class="panel needs-panel">
-            <div class="stat-row"><span>HP</span> <div class="stat-track"><div class="stat-fill c-hp" id="bar-hp"></div></div></div>
-            <div class="stat-row"><span>EDA</span> <div class="stat-track"><div class="stat-fill c-food" id="bar-food"></div></div></div>
-            <div class="stat-row"><span>H2O</span> <div class="stat-track"><div class="stat-fill c-water" id="bar-water"></div></div></div>
-            <div class="stat-row"><span>TMP</span> <div class="stat-track"><div class="stat-fill c-temp" id="bar-temp"></div></div></div>
+        <div class="hud pointer">
+            <div class="bar-wrap"><div class="bar-fill c-hp" id="bar-hp" style="width:100%"></div></div>
+            <div class="bar-wrap"><div class="bar-fill c-food" id="bar-food" style="width:100%"></div></div>
+            <div class="bar-wrap"><div class="bar-fill c-water" id="bar-water" style="width:100%"></div></div>
+        </div>
+        
+        <div class="toast-area" id="toasts"></div>
+        <div id="build-hint">РЕЖИМ СТРОЙКИ: Кликни на землю</div>
+
+        <div class="dock">
+            <div class="dock-btn" onclick="openModal('inventory')">🎒</div>
+            <div class="dock-btn" onclick="openModal('craft')">🔨</div>
+            <div class="dock-btn" onclick="saveGame(); toast('Сохранено!')">💾</div>
         </div>
 
-        <div class="biome-tag" id="biome-display">FOREST</div>
+        <div class="modal" id="modal-inventory">
+            <div class="modal-header"><span>ИНВЕНТАРЬ</span> <span class="close-btn" onclick="closeModals()">✕</span></div>
+            <div class="grid" id="inv-grid"></div>
+            <div class="details" id="inv-details">
+                <div style="color:#777">Выберите предмет...</div>
+            </div>
+        </div>
 
-        <div class="controls">
-            <div class="btn" onclick="toggleRaft()" id="btn-raft">🛶</div>
-            <div class="btn" onclick="equipWeapon('rifle')">🔫</div>
-            <div class="btn" onclick="equipWeapon('sword')">⚔️</div>
+        <div class="modal" id="modal-craft">
+            <div class="modal-header"><span>СОЗДАНИЕ</span> <span class="close-btn" onclick="closeModals()">✕</span></div>
+            <div class="grid" id="craft-grid"></div>
+            <div class="details" id="craft-details"></div>
         </div>
     </div>
 
 <script>
+    // --- DATABASE ---
+    const ITEMS = {
+        'wood': { name: 'Дерево', type: 'res', icon: '🌲' },
+        'stone': { name: 'Камень', type: 'res', icon: '🪨' },
+        'berry': { name: 'Ягода', type: 'food', val: 15, icon: '🍒' },
+        'fiber': { name: 'Волокно', type: 'res', icon: '🌿' },
+        
+        'axe_stone': { name: 'Кам. Топор', type: 'tool', slot: 'hand', icon: '🪓' },
+        'shirt_rag': { name: 'Лохмотья', type: 'armor', slot: 'chest', icon: '👕' },
+        'sword_iron': { name: 'Меч', type: 'weapon', slot: 'hand', icon: '⚔️' },
+        
+        'wall_wood': { name: 'Ст. (Дер)', type: 'build', id: 101, icon: '🧱' },
+        'floor_wood': { name: 'Пол (Дер)', type: 'build', id: 102, icon: '⬜' },
+        'campfire': { name: 'Костер', type: 'build', id: 103, icon: '🔥' }
+    };
+
+    const RECIPES = [
+        { out: 'axe_stone', n: 1, cost: { 'wood': 3, 'stone': 2 } },
+        { out: 'shirt_rag', n: 1, cost: { 'fiber': 5 } },
+        { out: 'sword_iron', n: 1, cost: { 'wood': 2, 'stone': 5 } }, // Simplified logic
+        { out: 'wall_wood', n: 1, cost: { 'wood': 4 } },
+        { out: 'floor_wood', n: 1, cost: { 'wood': 2 } },
+        { out: 'campfire', n: 1, cost: { 'wood': 5, 'stone': 2 } }
+    ];
+
+    // --- ENGINE SETUP ---
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
     const SCALE = 3; 
     const TILE_SIZE = 16 * SCALE; 
-    const CHUNK_SIZE = 20; // tiles per chunk (optimization)
+    let camera = { x: 0, y: 0 };
+    let mode = 'play'; // play, build
+    let buildItem = null; // item key being built
 
     // --- GAME STATE ---
-    let camera = { x: 0, y: 0 };
-    let gameTime = 0;
-
-    const player = {
+    let player = {
         x: 0, y: 0,
-        vx: 0, vy: 0,
-        speed: 4,
-        target: null,
-        state: 'idle',
-        facing: 1,
-        animTimer: 0,
-        
-        // Stats
-        hp: 100,
-        food: 100,
-        water: 100,
-        temp: 100, // 100 = warm, 0 = freezing
-        
-        // Equipment
-        equip: { body: 'skin', chest: null, weapon: null },
-        hasRaft: false
+        hp: 100, food: 100, water: 100,
+        inv: {}, // { 'wood': 10, 'stone': 2 }
+        equip: { chest: null, hand: null },
+        facing: 1
     };
 
-    const objects = []; // {x, y, type, biome}
-
-    // --- BIOME CONFIG ---
-    // Forest (Center), Winter (North < -1000), Desert (South > 1000), Ocean (East > 1500)
-    
-    function getBiome(x, y) {
-        if (x > 2000) return 'OCEAN';
-        if (y < -1200) return 'WINTER';
-        if (y > 1200) return 'DESERT';
-        return 'FOREST';
-    }
-
-    const BIOMES = {
-        'FOREST': { bg: '#2d3e26', tree: 'tree_oak', rock: 'rock_gray', part: '🍃' },
-        'WINTER': { bg: '#ddeeff', tree: 'tree_pine', rock: 'rock_ice', part: '❄️' },
-        'DESERT': { bg: '#eecd86', tree: 'cactus',    rock: 'rock_sand', part: '☀️' },
-        'OCEAN':  { bg: '#1ca3ec', tree: 'none',      rock: 'none',      part: '🌊' }
+    let world = {
+        seed: Math.random(),
+        structures: [], // {x, y, id}
+        dropped: [] // {x, y, id}
     };
 
-    // --- INIT ---
-    function init() {
-        resize();
-        window.addEventListener('resize', resize);
-        canvas.addEventListener('pointerdown', handleInput);
-        
-        // Generate initial world around player
-        generateChunk(0, 0);
-
-        // Game Loops
-        requestAnimationFrame(renderLoop);
-        setInterval(logicLoop, 1000); // 1 sec tick for stats
-    }
-
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        ctx.imageSmoothingEnabled = false;
-    }
-
-    // --- GENERATION ---
-    // Simple procedural generation based on coordinate hashing
-    function generateChunk(cx, cy) {
-        // Just fill objects randomly for now within a range if not exists
-        for(let i=0; i<30; i++) {
-            const rx = (Math.random() * 4000) - 2000; // -2000 to 2000
-            const ry = (Math.random() * 4000) - 2000;
-            const b = getBiome(rx, ry);
-            
-            if(b === 'OCEAN') continue; // Ocean needs islands (advanced logic later)
-
-            let type = Math.random() > 0.3 ? 'tree' : 'rock';
-            objects.push({ x: rx, y: ry, type: type, biome: b });
-        }
-        
-        // Special: Ocean Islands
-        for(let i=0; i<5; i++) {
-             objects.push({ x: 2500 + Math.random()*1000, y: Math.random()*2000 - 1000, type: 'island', biome: 'OCEAN' });
-        }
+    // Load Save
+    const save = localStorage.getItem('surv_save_v1');
+    if(save) {
+        const data = JSON.parse(save);
+        player = data.player;
+        world = data.world;
+        console.log("Save loaded");
     }
 
     // --- LOGIC ---
-    function logicLoop() {
-        const b = getBiome(player.x, player.y);
+    function init() {
+        resize();
+        window.addEventListener('resize', resize);
         
-        // Needs Decay
-        player.food = Math.max(0, player.food - 0.5);
-        player.water = Math.max(0, player.water - 0.8);
+        // Input
+        canvas.addEventListener('pointerdown', onPointerDown);
+        
+        // Loop
+        requestAnimationFrame(render);
+        setInterval(tick, 2000); // Slow tick for stats
+    }
 
-        // Biome Effects
-        if(b === 'DESERT') {
-            player.water = Math.max(0, player.water - 1.5); // Thirstier
-            player.temp = Math.min(100, player.temp + 5); // Warm up
-        } 
-        else if (b === 'WINTER') {
-            if(!player.equip.chest) player.temp = Math.max(0, player.temp - 2); // Freeze without clothes
-        }
-        else {
-            player.temp = Math.min(100, player.temp + 1); // Normalize in forest
+    function tick() {
+        // Slow decay
+        player.food = Math.max(0, player.food - 1);
+        player.water = Math.max(0, player.water - 1.5);
+        if(player.food === 0 || player.water === 0) player.hp = Math.max(0, player.hp - 1);
+        
+        updateHUD();
+    }
+
+    // --- MOVEMENT & INTERACTION ---
+    let target = null;
+    let targetAction = null; // { type: 'chop', x, y }
+
+    function onPointerDown(e) {
+        const r = canvas.getBoundingClientRect();
+        const mx = e.clientX - r.left + camera.x;
+        const my = e.clientY - r.top + camera.y;
+        
+        if(mode === 'build' && buildItem) {
+            placeStructure(mx, my);
+            return;
         }
 
-        // Damage from stats
-        if(player.food <= 0 || player.water <= 0 || player.temp <= 0) {
-            player.hp = Math.max(0, player.hp - 2);
+        // Check clicks on objects
+        const obj = getObjectAt(mx, my);
+        
+        if (obj) {
+            target = { x: obj.x, y: obj.y }; // Go to object
+            targetAction = { type: 'harvest', obj: obj };
+            createEffect(mx, my, '🎯');
         } else {
-            if(player.hp < 100 && player.food > 50) player.hp += 1; // Regen
+            target = { x: mx, y: my };
+            targetAction = null;
+            createEffect(mx, my, '📍');
         }
-
-        updateUI(b);
     }
 
-    function updateUI(biome) {
-        const u = (id, val) => document.getElementById(id).style.width = val + '%';
-        u('bar-hp', player.hp);
-        u('bar-food', player.food);
-        u('bar-water', player.water);
-        u('bar-temp', player.temp);
+    function updatePhysics() {
+        if (!target) return;
 
-        // Temp bar color
-        const tBar = document.getElementById('bar-temp');
-        if(biome === 'WINTER') tBar.style.backgroundColor = '#0ff'; // Cyan
-        else tBar.style.backgroundColor = '#f60'; // Orange
+        const dx = target.x - player.x;
+        const dy = target.y - player.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const speed = 4;
 
-        document.getElementById('biome-display').innerText = biome;
-        
-        const raftBtn = document.getElementById('btn-raft');
-        if(player.hasRaft) raftBtn.classList.add('toggle-on');
-        else raftBtn.classList.remove('toggle-on');
+        if (dist > speed) {
+            player.x += (dx/dist) * speed;
+            player.y += (dy/dist) * speed;
+            player.facing = dx > 0 ? 1 : -1;
+            player.anim = (Date.now() / 100) % Math.PI; // Walking anim
+        } else {
+            // Arrived
+            player.x = target.x;
+            player.y = target.y;
+            target = null;
+            
+            if(targetAction) {
+                performAction(targetAction);
+                targetAction = null;
+            }
+        }
     }
 
-    function handleInput(e) {
-        const rect = canvas.getBoundingClientRect();
-        const mx = e.clientX - rect.left + camera.x;
-        const my = e.clientY - rect.top + camera.y;
-        
-        // Check Biome restrictions
-        const targetBiome = getBiome(mx, my);
-        if(targetBiome === 'OCEAN' && !player.hasRaft) {
-            // Check if clicking on an island? (Simplified: just block water for now)
-            // Allow clicking if close to edge? 
-            // For prototype: Block movement if deep in water
-             if (mx > 2100) { // Hard border for visual clarity
-                 createEffect(mx, my, '🚫');
-                 return;
-             }
+    function performAction(act) {
+        if(act.type === 'harvest') {
+            const o = act.obj;
+            // Add items
+            if(o.type === 'tree') {
+                addItem('wood', 3);
+                addItem('berry', 1);
+                toast('+3 Дерева');
+                removeWorldObject(o);
+            } else if (o.type === 'rock') {
+                addItem('stone', 2);
+                toast('+2 Камня');
+                removeWorldObject(o);
+            }
         }
+    }
 
-        player.target = { x: mx, y: my };
-        createEffect(mx, my, '📍');
+    // --- INVENTORY SYSTEM ---
+    function addItem(id, qty) {
+        if(!player.inv[id]) player.inv[id] = 0;
+        player.inv[id] += qty;
+        saveGame();
+    }
+
+    function removeItem(id, qty) {
+        if(player.inv[id] >= qty) {
+            player.inv[id] -= qty;
+            if(player.inv[id] <= 0) delete player.inv[id];
+            return true;
+        }
+        return false;
+    }
+
+    function equipItem(id) {
+        const def = ITEMS[id];
+        if(!def.slot) return;
+        
+        // Unequip current if exists
+        if(player.equip[def.slot]) {
+            addItem(player.equip[def.slot], 1);
+        }
+        
+        player.equip[def.slot] = id;
+        removeItem(id, 1);
+        renderInventory(); // refresh
+        toast(`Надето: ${def.name}`);
+    }
+
+    function unequip(slot) {
+        if(player.equip[slot]) {
+            addItem(player.equip[slot], 1);
+            player.equip[slot] = null;
+            renderInventory();
+        }
+    }
+
+    function useItem(id) {
+        const def = ITEMS[id];
+        if(def.type === 'food') {
+            player.food = Math.min(100, player.food + def.val);
+            removeItem(id, 1);
+            toast('Ням-ням!');
+            updateHUD();
+            renderInventory();
+        } else if (def.type === 'build') {
+            startBuildMode(id);
+            closeModals();
+        }
+    }
+
+    // --- BUILDING ---
+    function startBuildMode(id) {
+        mode = 'build';
+        buildItem = id;
+        document.getElementById('build-hint').style.display = 'block';
+        toast('Режим стройки');
+    }
+
+    function placeStructure(mx, my) {
+        // Snap to grid 
+        const gx = Math.floor(mx / TILE_SIZE) * TILE_SIZE;
+        const gy = Math.floor(my / TILE_SIZE) * TILE_SIZE;
+        
+        // Deduct item
+        if(removeItem(buildItem, 1)) {
+            world.structures.push({ x: gx, y: gy, id: ITEMS[buildItem].id });
+            toast('Построено!');
+            
+            if(!player.inv[buildItem]) {
+                mode = 'play';
+                document.getElementById('build-hint').style.display = 'none';
+            }
+            saveGame();
+        }
+    }
+
+    // --- UI RENDER ---
+    function openModal(type) {
+        document.querySelectorAll('.modal').forEach(m => m.classList.remove('open'));
+        document.getElementById('modal-' + type).classList.add('open');
+        
+        if(type === 'inventory') renderInventory();
+        if(type === 'craft') renderCraft();
+    }
+
+    function closeModals() {
+        document.querySelectorAll('.modal').forEach(m => m.classList.remove('open'));
+    }
+
+    function renderInventory() {
+        const grid = document.getElementById('inv-grid');
+        grid.innerHTML = '';
+        
+        // Show equipped items first? Or just list
+        // Let's list equipped separately in future, now all in inv
+        
+        for(let id in player.inv) {
+            const def = ITEMS[id];
+            const el = document.createElement('div');
+            el.className = 'slot';
+            el.innerHTML = `<div>${def.icon}</div><div class="count">${player.inv[id]}</div>`;
+            el.onclick = () => showInvDetails(id);
+            grid.appendChild(el);
+        }
+    }
+
+    function showInvDetails(id) {
+        const d = document.getElementById('inv-details');
+        const def = ITEMS[id];
+        let html = `<b>${def.name}</b><br><small>${def.type.toUpperCase()}</small><br><div style="display:flex; gap:5px; margin-top:5px;">`;
+        
+        if(def.slot) html += `<button class="btn-action primary" onclick="equipItem('${id}')">Надеть</button>`;
+        if(def.type === 'food') html += `<button class="btn-action primary" onclick="useItem('${id}')">Съесть</button>`;
+        if(def.type === 'build') html += `<button class="btn-action primary" onclick="useItem('${id}')">Строить</button>`;
+        
+        html += `</div>`;
+        d.innerHTML = html;
+    }
+
+    function renderCraft() {
+        const grid = document.getElementById('craft-grid');
+        grid.innerHTML = '';
+        
+        RECIPES.forEach((r, idx) => {
+            const def = ITEMS[r.out];
+            const el = document.createElement('div');
+            el.className = 'slot';
+            el.innerHTML = `<div>${def.icon}</div>`;
+            
+            // Check cost
+            let can = true;
+            for(let res in r.cost) if((player.inv[res]||0) < r.cost[res]) can = false;
+            
+            if(!can) el.style.opacity = '0.3';
+            
+            el.onclick = () => {
+                const d = document.getElementById('craft-details');
+                let costStr = Object.entries(r.cost).map(([k,v]) => `${ITEMS[k].icon}${v}`).join(' ');
+                d.innerHTML = `<b>${def.name}</b><br>Цена: ${costStr}<br><button class="btn-action primary" ${!can?'disabled':''} onclick="craft(${idx})">Создать</button>`;
+            };
+            grid.appendChild(el);
+        });
+    }
+
+    function craft(idx) {
+        const r = RECIPES[idx];
+        // Deduct
+        for(let res in r.cost) removeItem(res, r.cost[res]);
+        // Add
+        addItem(r.out, r.n);
+        toast(`Создано: ${ITEMS[r.out].name}`);
+        renderCraft(); // Refresh UI
+    }
+
+    function updateHUD() {
+        document.getElementById('bar-hp').style.width = player.hp + '%';
+        document.getElementById('bar-food').style.width = player.food + '%';
+        document.getElementById('bar-water').style.width = player.water + '%';
+    }
+
+    function toast(msg) {
+        const t = document.createElement('div');
+        t.className = 'toast';
+        t.innerText = msg;
+        document.getElementById('toasts').appendChild(t);
+        setTimeout(() => t.remove(), 2000);
+    }
+
+    function saveGame() {
+        const data = { player, world };
+        localStorage.setItem('surv_save_v1', JSON.stringify(data));
     }
 
     // --- RENDER ---
-    function renderLoop() {
-        // Physics
-        if (player.target) {
-            const dx = player.target.x - player.x;
-            const dy = player.target.y - player.y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
+    function render() {
+        resize();
+        updatePhysics();
 
-            if (dist > player.speed) {
-                player.state = 'run';
-                player.animTimer += 0.2;
-                player.x += (dx / dist) * player.speed;
-                player.y += (dy / dist) * player.speed;
-                player.facing = dx > 0 ? 1 : -1;
-            } else {
-                player.state = 'idle';
-                player.target = null;
-            }
-        }
-
-        // Camera
+        // Camera Follow
         camera.x += (player.x - canvas.width/2 - camera.x) * 0.1;
         camera.y += (player.y - canvas.height/2 - camera.y) * 0.1;
 
-        // --- DRAWING ---
-        // 1. Ground (Tile based optimization)
-        const startCol = Math.floor(camera.x / 100) * 100;
-        const startRow = Math.floor(camera.y / 100) * 100;
+        // BG
+        ctx.fillStyle = '#2d3e26'; // Grass
+        ctx.fillRect(0,0, canvas.width, canvas.height);
+
+        // Draw World Objects
+        const objects = getVisibleObjects(); // Proc gen + saved structures
         
-        for(let x = startCol; x < camera.x + canvas.width; x+=100) {
-            for(let y = startRow; y < camera.y + canvas.height; y+=100) {
-                const b = getBiome(x + 50, y + 50);
-                ctx.fillStyle = BIOMES[b].bg;
-                // Add some noise/texture variation
-                ctx.fillRect(x - camera.x, y - camera.y, 102, 102); // Overlap slightly to fix gaps
-            }
-        }
+        // Sort by Y
+        objects.push({ type: 'player', x: player.x, y: player.y });
+        objects.sort((a,b) => a.y - b.y);
 
-        // 2. Objects
-        // Sort by Y for depth
-        const allObjs = [...objects, { ...player, type: 'player', y: player.y }];
-        allObjs.sort((a, b) => a.y - b.y);
-
-        allObjs.forEach(o => {
+        objects.forEach(o => {
             const sx = o.x - camera.x;
             const sy = o.y - camera.y;
-            // Optimization: cull off-screen
-            if(sx < -100 || sx > canvas.width + 100 || sy < -100 || sy > canvas.height + 100) return;
-
+            
             if(o.type === 'player') drawPlayer(sx, sy);
-            else drawObject(ctx, sx, sy, o);
+            else drawObject(sx, sy, o);
         });
+        
+        // Draw Build Preview
+        if(mode === 'build' && target) {
+             const gx = Math.floor(target.x / TILE_SIZE) * TILE_SIZE - camera.x;
+             const gy = Math.floor(target.y / TILE_SIZE) * TILE_SIZE - camera.y;
+             ctx.globalAlpha = 0.5;
+             drawObject(gx, gy, {id: ITEMS[buildItem].id, type:'structure'});
+             ctx.globalAlpha = 1.0;
+        }
 
-        // 3. Effects
-        drawEffects();
-
-        requestAnimationFrame(renderLoop);
+        requestAnimationFrame(render);
     }
 
-    // --- ASSETS DRAWING ---
-    function rect(ctx, x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(Math.floor(x), Math.floor(y), w, h); }
+    // Pseudo-random object generation based on coordinates
+    function getVisibleObjects() {
+        const res = [];
+        // Add Saved Structures
+        world.structures.forEach(s => {
+            res.push({ type: 'structure', x: s.x, y: s.y, id: s.id });
+        });
 
-    function drawObject(ctx, x, y, obj) {
-        const s = SCALE;
-        // Determine style based on Biome
-        let colorMain = '#555';
-        let colorDetail = '#333';
-        const biomeData = BIOMES[obj.biome] || BIOMES['FOREST'];
-
-        if (obj.type === 'tree') {
-            if (obj.biome === 'WINTER') {
-                // Pine Tree
-                rect(ctx, x-2*s, y, 4*s, 4*s, '#433'); // Trunk
-                rect(ctx, x-6*s, y-12*s, 12*s, 12*s, '#2a4a4a'); // Leaves Dark
-                rect(ctx, x-4*s, y-12*s, 8*s, 4*s, '#ddeeff'); // Snow on top
-            } else if (obj.biome === 'DESERT') {
-                // Cactus
-                rect(ctx, x-2*s, y-10*s, 4*s, 12*s, '#4a6'); // Main
-                rect(ctx, x-5*s, y-6*s, 3*s, 3*s, '#4a6'); // Arm L
-                rect(ctx, x+2*s, y-8*s, 3*s, 3*s, '#4a6'); // Arm R
-            } else {
-                // Oak
-                rect(ctx, x-2*s, y-2*s, 4*s, 6*s, '#643');
-                ctx.beginPath();
-                ctx.fillStyle = '#362';
-                ctx.arc(x, y-10*s, 8*s, 0, Math.PI*2);
-                ctx.fill();
+        // Generate Trees/Rocks around camera
+        // Using simple grid hashing for stability
+        const cx = Math.floor(camera.x / 100);
+        const cy = Math.floor(camera.y / 100);
+        
+        for(let x = cx-1; x < cx + (canvas.width/100)+2; x++) {
+            for(let y = cy-1; y < cy + (canvas.height/100)+2; y++) {
+                // Pseudo random
+                const val = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+                const rand = val - Math.floor(val);
+                
+                // Check if structure exists here (simple collision check)
+                const realX = x * 100 + 50;
+                const realY = y * 100 + 50;
+                const hasStruct = world.structures.some(s => Math.abs(s.x - realX) < 40 && Math.abs(s.y - realY) < 40);
+                
+                // Check if removed (chopped)
+                const isRemoved = world.removed && world.removed.includes(`${realX}:${realY}`);
+                
+                if(!hasStruct && !isRemoved) {
+                    if(rand > 0.7) res.push({ type: 'tree', x: realX, y: realY });
+                    else if (rand < 0.1) res.push({ type: 'rock', x: realX, y: realY });
+                }
             }
-        } else if (obj.type === 'rock') {
-            let c = '#777';
-            if(obj.biome === 'WINTER') c = '#aaccff';
-            if(obj.biome === 'DESERT') c = '#aa8866';
-            
-            ctx.beginPath();
-            ctx.fillStyle = c;
-            ctx.arc(x, y, 5*s, Math.PI, 0);
-            ctx.fill();
-        } else if (obj.type === 'island') {
-            ctx.beginPath();
-            ctx.fillStyle = '#eecd86'; // Sand
-            ctx.ellipse(x, y, 40*s, 20*s, 0, 0, Math.PI*2);
-            ctx.fill();
-            // Palm tree stub
-            rect(ctx, x, y-10, 4, 10, '#543');
+        }
+        return res;
+    }
+    
+    function removeWorldObject(o) {
+        if(!world.removed) world.removed = [];
+        world.removed.push(`${o.x}:${o.y}`);
+        saveGame();
+    }
+    
+    function getObjectAt(mx, my) {
+        // Brute force check visible
+        const objs = getVisibleObjects();
+        return objs.find(o => Math.abs(o.x - mx) < 20 && Math.abs(o.y - my) < 20 && o.type !== 'player' && o.type !== 'structure');
+    }
+
+    // --- DRAWING ---
+    function rect(x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(x,y,w,h); }
+
+    function drawObject(x, y, o) {
+        const s = SCALE;
+        if(o.type === 'tree') {
+            rect(x-2*s, y-2*s, 4*s, 4*s, '#533');
+            ctx.beginPath(); ctx.fillStyle = '#264'; ctx.arc(x, y-10*s, 8*s, 0, Math.PI*2); ctx.fill();
+        } else if (o.type === 'rock') {
+            ctx.beginPath(); ctx.fillStyle = '#777'; ctx.arc(x, y, 5*s, Math.PI, 0); ctx.fill();
+        } else if (o.type === 'structure') {
+            if(o.id === 101) rect(x, y-10*s, 16*s, 16*s, '#643'); // Wall
+            if(o.id === 102) rect(x, y, 16*s, 16*s, '#432'); // Floor
+            if(o.id === 103) { rect(x,y, 8*s, 2*s, '#555'); ctx.fillText('🔥', x-5, y); }
         }
     }
 
     function drawPlayer(x, y) {
         const s = SCALE;
-        const bob = player.state === 'run' ? Math.sin(player.animTimer)*2 : 0;
-        const f = player.facing;
-
-        ctx.save();
-        if(f === -1) { ctx.translate(x, y); ctx.scale(-1, 1); ctx.translate(-x, -y); }
-
-        // RAFT (Under player)
-        if(player.hasRaft && getBiome(player.x, player.y) === 'OCEAN') {
-            rect(ctx, x-8*s, y+6*s, 16*s, 4*s, '#853');
-        }
-
-        // Shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.beginPath(); ctx.ellipse(x, y+2*s, 6*s, 3*s, 0, 0, Math.PI*2); ctx.fill();
-
-        // Legs
-        const lOff = player.state === 'run' ? Math.sin(player.animTimer*2)*3 : 0;
-        rect(ctx, x-2*s+lOff, y-2*s, 2*s, 4*s, '#223');
-        rect(ctx, x+1*s-lOff, y-2*s, 2*s, 4*s, '#223');
-
+        const bob = Math.sin(Date.now()/100)*2;
+        
         // Body
-        let chestC = '#dcb'; // Skin
-        if(player.equip.chest === 'armor') chestC = '#343'; // Armor
-        rect(ctx, x-3*s, y-9*s+bob, 6*s, 7*s, chestC);
-
-        // Head
-        rect(ctx, x-3*s, y-15*s+bob, 6*s, 6*s, '#dcb');
-        // Eyes
-        rect(ctx, x+1*s, y-12*s+bob, 1*s, 1*s, '#000');
-        // Hair/Hat
-        rect(ctx, x-3*s, y-15*s+bob, 6*s, 2*s, '#432');
+        let chestC = '#dcb';
+        if(player.equip.chest === 'shirt_rag') chestC = '#654'; // Brown rag
+        
+        rect(x-3*s, y-9*s+bob, 6*s, 7*s, chestC);
+        rect(x-3*s, y-15*s+bob, 6*s, 6*s, '#dcb'); // Head
+        rect(x-2*s, y-2*s, 2*s, 4*s, '#334'); // Legs
+        rect(x+1*s, y-2*s, 2*s, 4*s, '#334');
 
         // Weapon
-        const wx = x + 3*s;
-        const wy = y - 6*s + bob;
-        if(player.equip.weapon === 'rifle') {
-            rect(ctx, wx-2*s, wy, 12*s, 2*s, '#111'); // Gun
-            rect(ctx, wx-3*s, wy, 2*s, 3*s, '#642'); // Stock
-        } else if (player.equip.weapon === 'sword') {
-             // Simple sword
-             ctx.fillStyle = '#ccc';
-             ctx.save();
-             ctx.translate(wx, wy);
-             ctx.rotate(Math.PI/4);
-             ctx.fillRect(0, -8*s, 2*s, 10*s);
-             ctx.restore();
+        if(player.equip.hand === 'axe_stone') {
+             ctx.fillText('🪓', x+5*s, y-5*s+bob);
+        } else if (player.equip.hand === 'sword_iron') {
+             ctx.fillText('⚔️', x+5*s, y-5*s+bob);
         }
-
-        ctx.restore();
     }
 
-    // --- EFFECTS ---
-    let effects = [];
-    function createEffect(x, y, txt) { effects.push({x, y, txt, life: 30}); }
-    function drawEffects() {
-        ctx.font = "20px Arial";
-        ctx.textAlign = "center";
-        effects = effects.filter(e => e.life > 0);
-        effects.forEach(e => {
-            e.life--;
-            ctx.fillStyle = `rgba(255,255,255,${e.life/30})`;
-            ctx.fillText(e.txt, e.x - camera.x, e.y - camera.y - (30-e.life));
-        });
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        ctx.font = '16px monospace';
     }
 
-    // --- EXPORTS ---
-    window.toggleRaft = () => {
-        player.hasRaft = !player.hasRaft;
-        const b = getBiome(player.x, player.y);
-        updateUI(b); // refresh UI
-    };
-    window.equipWeapon = (w) => player.equip.weapon = w;
+    function createEffect(x,y,txt) {
+        // simplified
+    }
 
     init();
 </script>
