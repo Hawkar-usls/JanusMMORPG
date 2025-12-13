@@ -3,46 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POCKET SURVIVAL: PIXEL</title>
+    <title>POCKET SURVIVAL: BIOMES</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { margin: 0; background: #111; overflow: hidden; font-family: 'Courier New', monospace; touch-action: none; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', monospace; touch-action: none; }
         canvas { display: block; image-rendering: pixelated; }
         
-        /* UI OVERLAY */
+        /* UI LAYERS */
         .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         
         .panel { 
-            background: rgba(20,20,20,0.9); border: 2px solid #444; 
-            padding: 10px; pointer-events: auto; position: absolute; 
-            color: #eee; font-size: 12px;
+            background: rgba(20,20,20,0.85); border: 2px solid #444; 
+            padding: 8px; pointer-events: auto; position: absolute; 
+            color: #eee; font-size: 10px; backdrop-filter: blur(2px);
+            border-radius: 6px;
         }
 
-        /* INVENTORY BAR */
-        .hotbar {
-            bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 5px;
-        }
-        .slot {
-            width: 40px; height: 40px; background: #333; border: 2px solid #555;
-            display: flex; justify-content: center; align-items: center; cursor: pointer;
-            position: relative;
-        }
-        .slot.active { border-color: #f0a500; }
-        .slot-icon { font-size: 20px; }
+        /* NEEDS BARS */
+        .needs-panel { top: 10px; left: 10px; width: 140px; }
+        .stat-row { display: flex; align-items: center; margin-bottom: 4px; justify-content: space-between; }
+        .stat-label { width: 30px; }
+        .stat-track { flex: 1; height: 6px; background: #333; margin-left: 5px; border-radius: 3px; overflow: hidden; }
+        .stat-fill { height: 100%; width: 100%; transition: width 0.5s; }
+        
+        /* COLORS */
+        .c-hp { background: #d33; }
+        .c-food { background: #fa0; }
+        .c-water { background: #0af; }
+        .c-temp { background: #f60; } /* Changes to cyan in winter */
 
-        /* EQUIPMENT MENU */
-        .equip-menu {
-            top: 20px; right: 20px; width: 120px; display: flex; flex-direction: column; gap: 5px;
+        /* CONTROLS */
+        .controls { bottom: 20px; right: 20px; display: flex; gap: 10px; }
+        .btn { 
+            width: 50px; height: 50px; background: #333; border: 2px solid #555; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; pointer-events: auto;
         }
-        .equip-btn {
-            background: #333; color: white; border: 1px solid #666; padding: 5px; cursor: pointer; text-align: left;
-        }
-        .equip-btn:hover { background: #444; }
+        .btn:active { background: #555; transform: scale(0.95); }
+        .btn.toggle-on { border-color: #0f0; background: #242; }
 
-        .stat-bar { height: 4px; background: #333; margin-top: 2px; width: 100px; }
-        .fill { height: 100%; width: 100%; transition: width 0.2s; }
-        .hp .fill { background: #d00; }
+        /* DEBUG/INFO */
+        .biome-tag {
+            position: absolute; top: 10px; right: 10px;
+            padding: 5px 10px; background: rgba(0,0,0,0.5); border-radius: 20px;
+            font-weight: bold; color: #fff; text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
@@ -50,108 +54,186 @@
     <canvas id="game"></canvas>
 
     <div class="ui-layer">
-        <div class="panel" style="top: 10px; left: 10px;">
-            <div>HP <div class="stat-bar hp"><div class="fill" id="hp-val"></div></div></div>
-            <div style="margin-top:5px; color:#aaa;" id="debug-info">X:0 Y:0</div>
+        <div class="panel needs-panel">
+            <div class="stat-row"><span>HP</span> <div class="stat-track"><div class="stat-fill c-hp" id="bar-hp"></div></div></div>
+            <div class="stat-row"><span>EDA</span> <div class="stat-track"><div class="stat-fill c-food" id="bar-food"></div></div></div>
+            <div class="stat-row"><span>H2O</span> <div class="stat-track"><div class="stat-fill c-water" id="bar-water"></div></div></div>
+            <div class="stat-row"><span>TMP</span> <div class="stat-track"><div class="stat-fill c-temp" id="bar-temp"></div></div></div>
         </div>
 
-        <div class="panel equip-menu">
-            <div style="color:#888; margin-bottom:5px;">ЭКИПИРОВКА</div>
-            <button class="equip-btn" onclick="equip('none')">Снять всё</button>
-            <button class="equip-btn" onclick="equip('armor')">Броня (Кевлар)</button>
-            <div style="color:#888; margin:5px 0;">ОРУЖИЕ</div>
-            <button class="equip-btn" onclick="equipWeapon('pistol')">Пистолет</button>
-            <button class="equip-btn" onclick="equipWeapon('rifle')">Винтовка AR</button>
-            <button class="equip-btn" onclick="equipWeapon('sword')">Катана</button>
-        </div>
+        <div class="biome-tag" id="biome-display">FOREST</div>
 
-        <div class="panel hotbar">
-            <div class="slot active" onclick="setMode('move')"><span class="slot-icon">🦶</span></div>
-            <div class="slot" onclick="setMode('build')"><span class="slot-icon">🧱</span></div>
-            <div class="slot" onclick="setMode('attack')"><span class="slot-icon">🎯</span></div>
+        <div class="controls">
+            <div class="btn" onclick="toggleRaft()" id="btn-raft">🛶</div>
+            <div class="btn" onclick="equipWeapon('rifle')">🔫</div>
+            <div class="btn" onclick="equipWeapon('sword')">⚔️</div>
         </div>
     </div>
 
 <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
+    const SCALE = 3; 
+    const TILE_SIZE = 16 * SCALE; 
+    const CHUNK_SIZE = 20; // tiles per chunk (optimization)
 
-    // Настройки
-    const SCALE = 3; // Масштаб пикселей
-    const TILE = 16 * SCALE; // Размер клетки мира
-    
-    // Состояние игры
+    // --- GAME STATE ---
     let camera = { x: 0, y: 0 };
-    let mouse = { x: 0, y: 0 };
-    let mode = 'move'; // move, build, attack
+    let gameTime = 0;
 
-    // ИГРОК
     const player = {
-        x: 400,
-        y: 300,
-        vx: 0,
-        vy: 0,
-        speed: 3, // Пикселей за кадр
-        target: null, // {x, y}
-        facing: 1, // 1 = right, -1 = left
+        x: 0, y: 0,
+        vx: 0, vy: 0,
+        speed: 4,
+        target: null,
+        state: 'idle',
+        facing: 1,
         animTimer: 0,
-        state: 'idle', // idle, run
         
-        // Визуальная экипировка (Paper Doll)
-        equip: {
-            body: 'skin', // skin
-            chest: null,  // null, 'armor'
-            weapon: null  // null, 'pistol', 'rifle', 'sword'
-        }
+        // Stats
+        hp: 100,
+        food: 100,
+        water: 100,
+        temp: 100, // 100 = warm, 0 = freezing
+        
+        // Equipment
+        equip: { body: 'skin', chest: null, weapon: null },
+        hasRaft: false
     };
 
-    // Объекты мира (для теста рендеринга)
-    const objects = [];
-    for(let i=0; i<20; i++) {
-        objects.push({
-            x: Math.random() * 2000, 
-            y: Math.random() * 2000,
-            type: Math.random() > 0.5 ? 'tree' : 'rock'
-        });
+    const objects = []; // {x, y, type, biome}
+
+    // --- BIOME CONFIG ---
+    // Forest (Center), Winter (North < -1000), Desert (South > 1000), Ocean (East > 1500)
+    
+    function getBiome(x, y) {
+        if (x > 2000) return 'OCEAN';
+        if (y < -1200) return 'WINTER';
+        if (y > 1200) return 'DESERT';
+        return 'FOREST';
     }
 
+    const BIOMES = {
+        'FOREST': { bg: '#2d3e26', tree: 'tree_oak', rock: 'rock_gray', part: '🍃' },
+        'WINTER': { bg: '#ddeeff', tree: 'tree_pine', rock: 'rock_ice', part: '❄️' },
+        'DESERT': { bg: '#eecd86', tree: 'cactus',    rock: 'rock_sand', part: '☀️' },
+        'OCEAN':  { bg: '#1ca3ec', tree: 'none',      rock: 'none',      part: '🌊' }
+    };
+
+    // --- INIT ---
     function init() {
         resize();
         window.addEventListener('resize', resize);
-        
-        // Управление (Мышь / Тач)
         canvas.addEventListener('pointerdown', handleInput);
         
-        requestAnimationFrame(loop);
+        // Generate initial world around player
+        generateChunk(0, 0);
+
+        // Game Loops
+        requestAnimationFrame(renderLoop);
+        setInterval(logicLoop, 1000); // 1 sec tick for stats
     }
 
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        ctx.imageSmoothingEnabled = false; // Важно для пикселей!
+        ctx.imageSmoothingEnabled = false;
+    }
+
+    // --- GENERATION ---
+    // Simple procedural generation based on coordinate hashing
+    function generateChunk(cx, cy) {
+        // Just fill objects randomly for now within a range if not exists
+        for(let i=0; i<30; i++) {
+            const rx = (Math.random() * 4000) - 2000; // -2000 to 2000
+            const ry = (Math.random() * 4000) - 2000;
+            const b = getBiome(rx, ry);
+            
+            if(b === 'OCEAN') continue; // Ocean needs islands (advanced logic later)
+
+            let type = Math.random() > 0.3 ? 'tree' : 'rock';
+            objects.push({ x: rx, y: ry, type: type, biome: b });
+        }
+        
+        // Special: Ocean Islands
+        for(let i=0; i<5; i++) {
+             objects.push({ x: 2500 + Math.random()*1000, y: Math.random()*2000 - 1000, type: 'island', biome: 'OCEAN' });
+        }
+    }
+
+    // --- LOGIC ---
+    function logicLoop() {
+        const b = getBiome(player.x, player.y);
+        
+        // Needs Decay
+        player.food = Math.max(0, player.food - 0.5);
+        player.water = Math.max(0, player.water - 0.8);
+
+        // Biome Effects
+        if(b === 'DESERT') {
+            player.water = Math.max(0, player.water - 1.5); // Thirstier
+            player.temp = Math.min(100, player.temp + 5); // Warm up
+        } 
+        else if (b === 'WINTER') {
+            if(!player.equip.chest) player.temp = Math.max(0, player.temp - 2); // Freeze without clothes
+        }
+        else {
+            player.temp = Math.min(100, player.temp + 1); // Normalize in forest
+        }
+
+        // Damage from stats
+        if(player.food <= 0 || player.water <= 0 || player.temp <= 0) {
+            player.hp = Math.max(0, player.hp - 2);
+        } else {
+            if(player.hp < 100 && player.food > 50) player.hp += 1; // Regen
+        }
+
+        updateUI(b);
+    }
+
+    function updateUI(biome) {
+        const u = (id, val) => document.getElementById(id).style.width = val + '%';
+        u('bar-hp', player.hp);
+        u('bar-food', player.food);
+        u('bar-water', player.water);
+        u('bar-temp', player.temp);
+
+        // Temp bar color
+        const tBar = document.getElementById('bar-temp');
+        if(biome === 'WINTER') tBar.style.backgroundColor = '#0ff'; // Cyan
+        else tBar.style.backgroundColor = '#f60'; // Orange
+
+        document.getElementById('biome-display').innerText = biome;
+        
+        const raftBtn = document.getElementById('btn-raft');
+        if(player.hasRaft) raftBtn.classList.add('toggle-on');
+        else raftBtn.classList.remove('toggle-on');
     }
 
     function handleInput(e) {
         const rect = canvas.getBoundingClientRect();
         const mx = e.clientX - rect.left + camera.x;
         const my = e.clientY - rect.top + camera.y;
-
-        if (mode === 'move') {
-            player.target = { x: mx, y: my };
-            // Эффект клика
-            effects.push({x: mx, y: my, time: 20});
+        
+        // Check Biome restrictions
+        const targetBiome = getBiome(mx, my);
+        if(targetBiome === 'OCEAN' && !player.hasRaft) {
+            // Check if clicking on an island? (Simplified: just block water for now)
+            // Allow clicking if close to edge? 
+            // For prototype: Block movement if deep in water
+             if (mx > 2100) { // Hard border for visual clarity
+                 createEffect(mx, my, '🚫');
+                 return;
+             }
         }
+
+        player.target = { x: mx, y: my };
+        createEffect(mx, my, '📍');
     }
 
-    // --- GAME LOOP ---
-    function loop() {
-        update();
-        render();
-        requestAnimationFrame(loop);
-    }
-
-    function update() {
-        // Движение игрока
+    // --- RENDER ---
+    function renderLoop() {
+        // Physics
         if (player.target) {
             const dx = player.target.x - player.x;
             const dy = player.target.y - player.y;
@@ -160,218 +242,176 @@
             if (dist > player.speed) {
                 player.state = 'run';
                 player.animTimer += 0.2;
-                
-                // Нормализация вектора
-                const vx = (dx / dist) * player.speed;
-                const vy = (dy / dist) * player.speed;
-
-                player.x += vx;
-                player.y += vy;
-
-                // Поворот спрайта
-                if(vx > 0.1) player.facing = 1;
-                if(vx < -0.1) player.facing = -1;
+                player.x += (dx / dist) * player.speed;
+                player.y += (dy / dist) * player.speed;
+                player.facing = dx > 0 ? 1 : -1;
             } else {
-                player.x = player.target.x;
-                player.y = player.target.y;
-                player.target = null;
                 player.state = 'idle';
-                player.animTimer = 0;
+                player.target = null;
             }
         }
 
-        // Камера (плавное слежение)
-        const targetCamX = player.x - canvas.width / 2;
-        const targetCamY = player.y - canvas.height / 2;
-        camera.x += (targetCamX - camera.x) * 0.1;
-        camera.y += (targetCamY - camera.y) * 0.1;
+        // Camera
+        camera.x += (player.x - canvas.width/2 - camera.x) * 0.1;
+        camera.y += (player.y - canvas.height/2 - camera.y) * 0.1;
 
-        // UI Update
-        document.getElementById('debug-info').innerText = `POS: ${Math.floor(player.x)}, ${Math.floor(player.y)}`;
-    }
-
-    // --- RENDER ENGINE ---
-    function render() {
-        // Фон
-        ctx.fillStyle = '#2d2d2d';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // --- DRAWING ---
+        // 1. Ground (Tile based optimization)
+        const startCol = Math.floor(camera.x / 100) * 100;
+        const startRow = Math.floor(camera.y / 100) * 100;
         
-        // Сетка земли (для ощущения движения)
-        const gridSize = 50;
-        const offsetX = -camera.x % gridSize;
-        const offsetY = -camera.y % gridSize;
-        
-        ctx.beginPath();
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 1;
-        for(let x=offsetX; x<canvas.width; x+=gridSize) {
-            ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height);
-        }
-        for(let y=offsetY; y<canvas.height; y+=gridSize) {
-            ctx.moveTo(0, y); ctx.lineTo(canvas.width, y);
-        }
-        ctx.stroke();
-
-        // Рендер объектов (сортировка по Y для глубины)
-        const renderList = [...objects, { ...player, type: 'player' }];
-        renderList.sort((a, b) => a.y - b.y);
-
-        renderList.forEach(obj => {
-            const screenX = obj.x - camera.x;
-            const screenY = obj.y - camera.y;
-
-            if (obj.type === 'player') {
-                drawPlayer(ctx, screenX, screenY);
-            } else if (obj.type === 'tree') {
-                drawTree(ctx, screenX, screenY);
-            } else if (obj.type === 'rock') {
-                drawRock(ctx, screenX, screenY);
+        for(let x = startCol; x < camera.x + canvas.width; x+=100) {
+            for(let y = startRow; y < camera.y + canvas.height; y+=100) {
+                const b = getBiome(x + 50, y + 50);
+                ctx.fillStyle = BIOMES[b].bg;
+                // Add some noise/texture variation
+                ctx.fillRect(x - camera.x, y - camera.y, 102, 102); // Overlap slightly to fix gaps
             }
+        }
+
+        // 2. Objects
+        // Sort by Y for depth
+        const allObjs = [...objects, { ...player, type: 'player', y: player.y }];
+        allObjs.sort((a, b) => a.y - b.y);
+
+        allObjs.forEach(o => {
+            const sx = o.x - camera.x;
+            const sy = o.y - camera.y;
+            // Optimization: cull off-screen
+            if(sx < -100 || sx > canvas.width + 100 || sy < -100 || sy > canvas.height + 100) return;
+
+            if(o.type === 'player') drawPlayer(sx, sy);
+            else drawObject(ctx, sx, sy, o);
         });
 
-        // Эффекты
-        renderEffects();
+        // 3. Effects
+        drawEffects();
+
+        requestAnimationFrame(renderLoop);
     }
 
-    // --- PIXEL ART GENERATOR ---
-    
-    // Рисует прямоугольник "пикселей"
-    function rect(ctx, x, y, w, h, color) {
-        ctx.fillStyle = color;
-        ctx.fillRect(Math.floor(x), Math.floor(y), w * SCALE, h * SCALE);
-    }
+    // --- ASSETS DRAWING ---
+    function rect(ctx, x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(Math.floor(x), Math.floor(y), w, h); }
 
-    function drawPlayer(ctx, x, y) {
+    function drawObject(ctx, x, y, obj) {
         const s = SCALE;
-        const f = player.facing; // 1 или -1
-        
-        // Анимация подпрыгивания (bobbing)
-        let bobY = 0;
-        let legOffset = 0;
-        
-        if (player.state === 'run') {
-            bobY = Math.sin(player.animTimer) * 1 * s;
-            legOffset = Math.sin(player.animTimer * 2) * 3 * s;
-        }
+        // Determine style based on Biome
+        let colorMain = '#555';
+        let colorDetail = '#333';
+        const biomeData = BIOMES[obj.biome] || BIOMES['FOREST'];
 
-        // Центрируем отрисовку по ногам
-        const cx = x;
-        const cy = y - (12 * s); 
+        if (obj.type === 'tree') {
+            if (obj.biome === 'WINTER') {
+                // Pine Tree
+                rect(ctx, x-2*s, y, 4*s, 4*s, '#433'); // Trunk
+                rect(ctx, x-6*s, y-12*s, 12*s, 12*s, '#2a4a4a'); // Leaves Dark
+                rect(ctx, x-4*s, y-12*s, 8*s, 4*s, '#ddeeff'); // Snow on top
+            } else if (obj.biome === 'DESERT') {
+                // Cactus
+                rect(ctx, x-2*s, y-10*s, 4*s, 12*s, '#4a6'); // Main
+                rect(ctx, x-5*s, y-6*s, 3*s, 3*s, '#4a6'); // Arm L
+                rect(ctx, x+2*s, y-8*s, 3*s, 3*s, '#4a6'); // Arm R
+            } else {
+                // Oak
+                rect(ctx, x-2*s, y-2*s, 4*s, 6*s, '#643');
+                ctx.beginPath();
+                ctx.fillStyle = '#362';
+                ctx.arc(x, y-10*s, 8*s, 0, Math.PI*2);
+                ctx.fill();
+            }
+        } else if (obj.type === 'rock') {
+            let c = '#777';
+            if(obj.biome === 'WINTER') c = '#aaccff';
+            if(obj.biome === 'DESERT') c = '#aa8866';
+            
+            ctx.beginPath();
+            ctx.fillStyle = c;
+            ctx.arc(x, y, 5*s, Math.PI, 0);
+            ctx.fill();
+        } else if (obj.type === 'island') {
+            ctx.beginPath();
+            ctx.fillStyle = '#eecd86'; // Sand
+            ctx.ellipse(x, y, 40*s, 20*s, 0, 0, Math.PI*2);
+            ctx.fill();
+            // Palm tree stub
+            rect(ctx, x, y-10, 4, 10, '#543');
+        }
+    }
+
+    function drawPlayer(x, y) {
+        const s = SCALE;
+        const bob = player.state === 'run' ? Math.sin(player.animTimer)*2 : 0;
+        const f = player.facing;
 
         ctx.save();
-        
-        // Отражение по горизонтали если смотрим влево
-        if (f === -1) {
-            ctx.translate(cx, cy);
-            ctx.scale(-1, 1);
-            ctx.translate(-cx, -cy);
+        if(f === -1) { ctx.translate(x, y); ctx.scale(-1, 1); ctx.translate(-x, -y); }
+
+        // RAFT (Under player)
+        if(player.hasRaft && getBiome(player.x, player.y) === 'OCEAN') {
+            rect(ctx, x-8*s, y+6*s, 16*s, 4*s, '#853');
         }
 
-        // -- 1. НОГИ --
-        const legColor = '#222'; // Штаны
-        // Левая нога
-        rect(ctx, cx - 2*s, cy + 8*s, 2, 4, legColor);
-        // Правая нога (двигается)
-        rect(ctx, cx + 1*s + (legOffset/s), cy + 8*s, 2, 4, legColor);
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath(); ctx.ellipse(x, y+2*s, 6*s, 3*s, 0, 0, Math.PI*2); ctx.fill();
 
-        // -- 2. ТЕЛО --
-        let chestColor = '#dcb18c'; // Кожа
-        if (player.equip.chest === 'armor') chestColor = '#3a4a38'; // Военная броня (зеленая)
-        
-        // Торс
-        rect(ctx, cx - 3*s, cy + 2*s + bobY, 6, 6, chestColor);
-        
-        // Если броня, рисуем детали бронежилета
-        if(player.equip.chest === 'armor') {
-             rect(ctx, cx - 1*s, cy + 3*s + bobY, 2, 3, '#252e24'); // Пластина
-        }
+        // Legs
+        const lOff = player.state === 'run' ? Math.sin(player.animTimer*2)*3 : 0;
+        rect(ctx, x-2*s+lOff, y-2*s, 2*s, 4*s, '#223');
+        rect(ctx, x+1*s-lOff, y-2*s, 2*s, 4*s, '#223');
 
-        // -- 3. ГОЛОВА --
-        const headY = cy - 4*s + bobY;
-        rect(ctx, cx - 3*s, headY, 6, 6, '#dcb18c'); // Кожа
-        // Волосы / Шлем
-        rect(ctx, cx - 3*s, headY, 6, 2, '#422'); // Темные волосы
-        // Глаза
-        rect(ctx, cx + 1*s, headY + 2*s, 1, 1, '#000');
+        // Body
+        let chestC = '#dcb'; // Skin
+        if(player.equip.chest === 'armor') chestC = '#343'; // Armor
+        rect(ctx, x-3*s, y-9*s+bob, 6*s, 7*s, chestC);
 
-        // -- 4. ОРУЖИЕ (Слой над телом) --
-        const handY = cy + 4*s + bobY;
-        const handX = cx + 2*s;
+        // Head
+        rect(ctx, x-3*s, y-15*s+bob, 6*s, 6*s, '#dcb');
+        // Eyes
+        rect(ctx, x+1*s, y-12*s+bob, 1*s, 1*s, '#000');
+        // Hair/Hat
+        rect(ctx, x-3*s, y-15*s+bob, 6*s, 2*s, '#432');
 
-        if (player.equip.weapon === 'pistol') {
-            // Пистолет (черный блок)
-            rect(ctx, handX, handY, 4, 2, '#111');
-            rect(ctx, handX+1*s, handY+1*s, 1, 2, '#111'); // Рукоять
-        } 
-        else if (player.equip.weapon === 'rifle') {
-            // Винтовка (длинная)
-            rect(ctx, handX - 2*s, handY, 10, 2, '#111'); // Ствол
-            rect(ctx, handX - 3*s, handY, 2, 3, '#533'); // Приклад (дерево/пластик)
-            rect(ctx, handX + 1*s, handY+2*s, 1, 2, '#000'); // Магазин
-        }
-        else if (player.equip.weapon === 'sword') {
-            // Меч (под углом сложно в пикселях без ротации canvas, сделаем прямым)
-            rect(ctx, handX, handY - 8*s, 2, 10, '#ccc'); // Лезвие
-            rect(ctx, handX-1*s, handY, 4, 1, '#gold'); // Гарда
-            rect(ctx, handX, handY + 1*s, 1, 2, '#533'); // Рукоять
+        // Weapon
+        const wx = x + 3*s;
+        const wy = y - 6*s + bob;
+        if(player.equip.weapon === 'rifle') {
+            rect(ctx, wx-2*s, wy, 12*s, 2*s, '#111'); // Gun
+            rect(ctx, wx-3*s, wy, 2*s, 3*s, '#642'); // Stock
+        } else if (player.equip.weapon === 'sword') {
+             // Simple sword
+             ctx.fillStyle = '#ccc';
+             ctx.save();
+             ctx.translate(wx, wy);
+             ctx.rotate(Math.PI/4);
+             ctx.fillRect(0, -8*s, 2*s, 10*s);
+             ctx.restore();
         }
 
         ctx.restore();
-        
-        // Имя/Статус
-        ctx.fillStyle = "white";
-        ctx.font = "10px monospace";
-        ctx.textAlign = "center";
-        ctx.fillText("Survivor", x, y - 50);
-    }
-
-    // Простые процедурные декорации
-    function drawTree(ctx, x, y) {
-        // Ствол
-        rect(ctx, x-2*SCALE, y-4*SCALE, 4, 4, '#533');
-        // Листва (пирамидкой)
-        rect(ctx, x-6*SCALE, y-14*SCALE, 12, 10, '#2d4e26');
-        rect(ctx, x-4*SCALE, y-18*SCALE, 8, 4, '#3e6e36');
-    }
-
-    function drawRock(ctx, x, y) {
-        rect(ctx, x-3*SCALE, y-3*SCALE, 6, 4, '#777');
-        rect(ctx, x-2*SCALE, y-4*SCALE, 4, 1, '#888');
     }
 
     // --- EFFECTS ---
     let effects = [];
-    function renderEffects() {
-        ctx.strokeStyle = '#f0a500';
-        ctx.lineWidth = 2;
-        effects = effects.filter(e => e.time > 0);
+    function createEffect(x, y, txt) { effects.push({x, y, txt, life: 30}); }
+    function drawEffects() {
+        ctx.font = "20px Arial";
+        ctx.textAlign = "center";
+        effects = effects.filter(e => e.life > 0);
         effects.forEach(e => {
-            e.time--;
-            const r = (20 - e.time) * 1.5;
-            ctx.beginPath();
-            ctx.arc(e.x - camera.x, e.y - camera.y, r, 0, Math.PI*2);
-            ctx.stroke();
+            e.life--;
+            ctx.fillStyle = `rgba(255,255,255,${e.life/30})`;
+            ctx.fillText(e.txt, e.x - camera.x, e.y - camera.y - (30-e.life));
         });
     }
 
-    // --- INTERFACE CONTROL ---
-    window.equip = (type) => {
-        if(type === 'none') {
-            player.equip.chest = null;
-        } else {
-            player.equip.chest = type;
-        }
+    // --- EXPORTS ---
+    window.toggleRaft = () => {
+        player.hasRaft = !player.hasRaft;
+        const b = getBiome(player.x, player.y);
+        updateUI(b); // refresh UI
     };
-
-    window.equipWeapon = (type) => {
-        player.equip.weapon = type;
-    };
-
-    window.setMode = (m) => {
-        mode = m;
-        document.querySelectorAll('.slot').forEach(s => s.classList.remove('active'));
-        event.currentTarget.classList.add('active');
-    };
+    window.equipWeapon = (w) => player.equip.weapon = w;
 
     init();
 </script>
