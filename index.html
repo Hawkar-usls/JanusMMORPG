@@ -3,226 +3,595 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>JANUS: IMMERSION</title>
+    <title>POCKET SURVIVAL</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #050505;
-            --surface: #121212;
-            --surface-2: #1e1e1e;
-            --accent: #ffffff;
-            --text: #eeeeee;
-            --text-dim: #888888;
-            --border: rgba(255,255,255,0.1);
-            
-            --safe-top: env(safe-area-inset-top, 20px);
-            --safe-bottom: env(safe-area-inset-bottom, 20px);
+            --bg: #111;
+            --ui-bg: rgba(20, 20, 20, 0.95);
+            --ui-border: rgba(255, 255, 255, 0.15);
+            --accent: #f0a500;
+            --danger: #ff4444;
+            --success: #44ff44;
+            --text: #eee;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
         
         body {
             margin: 0; padding: 0; width: 100vw; height: 100dvh;
             background: var(--bg); color: var(--text);
             font-family: 'Inter', sans-serif;
             overflow: hidden;
-            display: flex; flex-direction: column;
+            touch-action: none; /* Отключаем зум и скролл браузера */
         }
 
-        /* HEADER (Fixed Top) */
-        .status-bar {
-            height: calc(60px + var(--safe-top));
-            padding: var(--safe-top) 15px 10px 15px;
-            background: rgba(18,18,18,0.95);
-            border-bottom: 1px solid var(--border);
-            display: flex; justify-content: space-between; align-items: center;
-            flex-shrink: 0; z-index: 10;
-        }
-        .char-name { font-weight: 700; font-size: 14px; }
-        .res-val { font-family: 'JetBrains Mono'; font-weight: 700; font-size: 13px; color: #ffd700; }
-
-        /* CHAT AREA (Scrollable Middle) */
-        #chat-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 15px;
-            padding-bottom: 20px; /* Отступ от нижнего бара */
-            display: flex; flex-direction: column; gap: 12px;
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
+        /* CANVAS LAYER */
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated; /* Пиксельный стиль */
         }
 
-        /* Сообщения */
-        .msg { max-width: 85%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.5; animation: pop 0.2s ease; }
-        .msg.ai { background: var(--surface-2); align-self: flex-start; border-bottom-left-radius: 2px; }
-        .msg.user { background: var(--accent); color: #000; align-self: flex-end; border-bottom-right-radius: 2px; font-weight: 500; }
-        .msg.system { align-self: center; font-size: 11px; color: var(--text-dim); border: 1px solid var(--border); padding: 4px 10px; border-radius: 20px; }
-        @keyframes pop { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-
-        /* BOTTOM DOCK (Fixed Bottom) */
-        .bottom-dock {
-            background: rgba(18,18,18,0.95);
-            border-top: 1px solid var(--border);
-            padding-bottom: var(--safe-bottom);
-            flex-shrink: 0; z-index: 20;
+        /* UI HUD LAYER */
+        .hud-top {
+            position: absolute; top: 10px; left: 10px; right: 10px;
+            display: flex; justify-content: space-between;
+            pointer-events: none; /* Пропускаем клики сквозь UI на канвас */
         }
 
-        .input-bar {
-            padding: 10px 15px;
-            display: flex; gap: 10px; align-items: center;
+        .stats-panel {
+            background: var(--ui-bg);
+            border: 1px solid var(--ui-border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            pointer-events: auto;
+            display: flex; gap: 15px;
+            backdrop-filter: blur(4px);
         }
 
-        #main-input {
-            flex: 1; background: #000; border: 1px solid var(--border);
-            border-radius: 20px; padding: 10px 15px; color: #fff; font-size: 16px; /* 16px to prevent iOS zoom */
-            outline: none;
+        .stat-item { display: flex; flex-direction: column; align-items: center; width: 40px; }
+        .stat-label { font-size: 10px; color: #888; margin-bottom: 2px; }
+        .stat-bar { width: 100%; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
+        .stat-fill { height: 100%; transition: width 0.3s; }
+
+        .res-panel {
+            background: var(--ui-bg);
+            border: 1px solid var(--ui-border);
+            border-radius: 8px;
+            padding: 8px;
+            pointer-events: auto;
+            display: flex; flex-direction: column; gap: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
         }
-        #main-input:focus { border-color: #666; }
 
-        .send-btn {
-            width: 36px; height: 36px; border-radius: 50%; background: var(--accent);
-            border: none; display: flex; justify-content: center; align-items: center; cursor: pointer;
+        /* LOG */
+        #game-log {
+            position: absolute; bottom: 100px; left: 10px;
+            width: 200px; height: 100px;
+            pointer-events: none;
+            overflow: hidden;
+            display: flex; flex-direction: column; justify-content: flex-end;
+            text-shadow: 1px 1px 2px #000;
+            font-size: 12px; opacity: 0.8;
+        }
+        .log-entry { margin-top: 2px; animation: fadeOut 5s forwards; }
+        @keyframes fadeOut { 0% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+
+        /* BOTTOM CONTROLS */
+        .bottom-bar {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: var(--ui-bg);
+            border-top: 1px solid var(--ui-border);
+            padding: 10px 15px 25px 15px; /* Extra bottom for iPhone home bar */
+            display: flex; justify-content: space-around;
+            gap: 10px;
         }
 
-        .menu-grid { display: flex; justify-content: space-around; padding: 8px 0; border-top: 1px solid var(--border); }
-        .menu-item { display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--text-dim); font-size: 9px; width: 60px; cursor: pointer; }
-        .menu-icon { font-size: 18px; }
-
-        /* PANELS */
-        .sliding-panel {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 70vh;
-            background: #151515; border-radius: 20px 20px 0 0; padding: 20px;
-            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-            z-index: 1000; display: flex; flex-direction: column;
+        .btn {
+            background: #333; border: 1px solid #555;
+            color: white; padding: 10px; border-radius: 8px;
+            flex: 1; text-align: center; font-size: 13px; font-weight: 600;
+            cursor: pointer; position: relative;
         }
-        .sliding-panel.open { transform: translateY(0); }
-        .panel-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 900; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-        .panel-overlay.visible { opacity: 1; pointer-events: auto; }
+        .btn:active { transform: scale(0.96); }
+        .btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
 
-        .inv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; overflow-y: auto; }
-        .inv-slot { aspect-ratio: 1; background: #222; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 20px; border: 1px solid var(--border); }
+        /* Build Menu Overlay */
+        .build-menu {
+            position: absolute; bottom: 90px; left: 10px; right: 10px;
+            background: #1a1a1a; border: 1px solid var(--ui-border);
+            border-radius: 12px; padding: 15px;
+            display: none; grid-template-columns: repeat(4, 1fr); gap: 10px;
+        }
+        .build-menu.visible { display: grid; }
+        
+        .build-item {
+            background: #252525; border-radius: 8px; padding: 10px;
+            text-align: center; border: 1px solid #333;
+            cursor: pointer;
+        }
+        .build-item.selected { border-color: var(--accent); }
+        .build-icon { font-size: 20px; display: block; margin-bottom: 5px; }
+        .build-cost { font-size: 10px; color: #aaa; }
 
-        /* КНОПКА ЗАКРЫТИЯ */
-        .close-handle { width: 40px; height: 4px; background: #444; border-radius: 2px; align-self: center; margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
-    <div class="status-bar">
-        <div>
-            <div class="char-name" id="hud-name">...</div>
-            <div style="font-size: 10px; color: #888;" id="hud-loc">...</div>
+    <div class="hud-top">
+        <div class="stats-panel">
+            <div class="stat-item">
+                <span class="stat-label">HP</span>
+                <div class="stat-bar"><div class="stat-fill" id="hp-bar" style="width: 100%; background: #ff4444;"></div></div>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">EDA</span>
+                <div class="stat-bar"><div class="stat-fill" id="hunger-bar" style="width: 90%; background: #ffaa00;"></div></div>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">ENG</span>
+                <div class="stat-bar"><div class="stat-fill" id="energy-bar" style="width: 80%; background: #44aaff;"></div></div>
+            </div>
         </div>
-        <div>
-            <span class="res-val" id="hud-money">0</span> <span style="font-size: 9px; color: #888;">CR</span>
-        </div>
-    </div>
 
-    <div id="chat-container"></div>
-
-    <div class="bottom-dock">
-        <div class="input-bar">
-            <input type="text" id="main-input" placeholder="Действие..." autocomplete="off">
-            <button class="send-btn" onclick="send()">➤</button>
-        </div>
-        <div class="menu-grid">
-            <div class="menu-item" onclick="openPanel('p-profile')"><div class="menu-icon">👤</div>Герой</div>
-            <div class="menu-item" onclick="openPanel('p-inv')"><div class="menu-icon">🎒</div>Сумка</div>
-            <div class="menu-item" onclick="send('Осмотреться')"><div class="menu-icon">👁️</div>Осмотр</div>
-            <div class="menu-item" onclick="openPanel('p-menu')"><div class="menu-icon">⚙️</div>Меню</div>
+        <div class="res-panel">
+            <div>🌲 <span id="res-wood">0</span></div>
+            <div>🪨 <span id="res-stone">0</span></div>
+            <div>🍖 <span id="res-food">0</span></div>
         </div>
     </div>
 
-    <div class="panel-overlay" id="overlay" onclick="closePanels()"></div>
+    <div id="game-log"></div>
 
-    <div class="sliding-panel" id="p-profile">
-        <div class="close-handle" onclick="closePanels()"></div>
-        <h2 style="margin: 0 0 20px 0;">Досье</h2>
-        <div style="font-size: 14px; color: #ccc;">
-            <p>Класс: <span id="prof-class" style="color:#fff; font-weight:bold">...</span></p>
-            <p>HP: <span id="prof-hp">100/100</span></p>
-            <a href="https://hawkar-usls.github.io/iNaiHR-Janus-/" target="_blank" style="display:block; margin-top:20px; padding:12px; background:#222; text-align:center; color:#fff; text-decoration:none; border-radius:8px;">🧠 Открыть iNaiHR</a>
+    <div class="build-menu" id="build-menu">
+        <div class="build-item" onclick="selectBuild('wall')">
+            <span class="build-icon">🧱</span>
+            <span class="build-name">Стена</span>
+            <div class="build-cost">5 🌲</div>
+        </div>
+        <div class="build-item" onclick="selectBuild('floor')">
+            <span class="build-icon">⬜</span>
+            <span class="build-name">Пол</span>
+            <div class="build-cost">2 🌲</div>
+        </div>
+        <div class="build-item" onclick="selectBuild('fire')">
+            <span class="build-icon">🔥</span>
+            <span class="build-name">Костер</span>
+            <div class="build-cost">10 🌲 5 🪨</div>
+        </div>
+        <div class="build-item" onclick="selectBuild('bed')">
+            <span class="build-icon">🛏️</span>
+            <span class="build-name">Лежак</span>
+            <div class="build-cost">20 🌲</div>
         </div>
     </div>
 
-    <div class="sliding-panel" id="p-inv">
-        <div class="close-handle" onclick="closePanels()"></div>
-        <h2 style="margin: 0 0 20px 0;">Инвентарь</h2>
-        <div class="inv-grid" id="inv-grid"></div>
-    </div>
+    <canvas id="game"></canvas>
 
-    <div class="sliding-panel" id="p-menu">
-        <div class="close-handle" onclick="closePanels()"></div>
-        <button onclick="send('Статус'); closePanels()" style="width:100%; padding:15px; margin-bottom:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px;">Обновить статус</button>
-        <button onclick="send('WIPE PROTOCOL'); closePanels()" style="width:100%; padding:15px; background:rgba(255,50,50,0.1); border:1px solid #f44; color:#f44; border-radius:8px;">СБРОС ИГРЫ</button>
+    <div class="bottom-bar">
+        <div class="btn active" id="mode-move" onclick="setMode('move')">🖐 Действие</div>
+        <div class="btn" id="mode-build" onclick="setMode('build')">🔨 Стройка</div>
+        <div class="btn" onclick="eatFood()">🍖 Есть</div>
     </div>
 
 <script>
-    const API_BASE = "https://supperless-yoshiko-noneruditely.ngrok-free.dev";
-    const USER_ID = window.Telegram.WebApp.initDataUnsafe?.user?.id || "392910542";
+    // --- TELEGRAM INIT ---
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    tg.ready();
+    const USER_ID = tg.initDataUnsafe?.user?.id || "local_dev";
+
+    // --- ENGINE CONSTANTS ---
+    const TILE_SIZE = 48; // Размер клетки
+    const MAP_SIZE = 60;  // Размер карты
+    const VIEWPORT_PAD = 2; // Отрисовка за пределами экрана
     
-    const chat = document.getElementById('chat-container');
-    const inp = document.getElementById('main-input');
+    // Типы тайлов
+    const T = {
+        GRASS: 0,
+        WATER: 1,
+        FLOOR: 2,
+        WALL: 3,
+        TREE: 4,
+        ROCK: 5,
+        FIRE: 6
+    };
 
-    function addMsg(text, type) {
-        const d = document.createElement('div');
-        d.className = `msg ${type}`;
-        d.innerHTML = text.replace(/\n/g, '<br>');
-        chat.appendChild(d);
-        // Скролл вниз
-        setTimeout(() => chat.scrollTop = chat.scrollHeight, 50);
-    }
+    // Цвета и спрайты (Эмодзи для простоты)
+    const COLORS = {
+        [T.GRASS]: '#2d3e26',
+        [T.WATER]: '#1ca3ec',
+        [T.FLOOR]: '#4a3b2a',
+        [T.WALL]: '#666',
+        [T.TREE]: '#2d3e26', // Фон под деревом
+        [T.ROCK]: '#2d3e26',
+        [T.FIRE]: '#4a3b2a'
+    };
 
-    function openPanel(id) {
-        document.getElementById('overlay').classList.add('visible');
-        document.getElementById(id).classList.add('open');
-    }
-    function closePanels() {
-        document.getElementById('overlay').classList.remove('visible');
-        document.querySelectorAll('.sliding-panel').forEach(p => p.classList.remove('open'));
-    }
+    const SPRITES = {
+        [T.TREE]: '🌲',
+        [T.ROCK]: '🪨',
+        [T.WALL]: '🧱',
+        [T.FIRE]: '🔥',
+        [T.WATER]: '🌊'
+    };
 
-    async function send(txt) {
-        const text = txt || inp.value.trim();
-        if(!text) return;
+    // --- STATE ---
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    
+    let camera = { x: 0, y: 0 };
+    let mode = 'move'; // move, build
+    let buildTarget = null;
+    let lastTime = 0;
+
+    // Player State
+    const player = {
+        x: Math.floor(MAP_SIZE/2),
+        y: Math.floor(MAP_SIZE/2),
+        targetX: null,
+        targetY: null,
+        moveTimer: 0,
+        speed: 150, // ms per tile
+        hp: 100,
+        hunger: 100,
+        energy: 100,
+        inv: { wood: 0, stone: 0, food: 0 }
+    };
+
+    // Map Data
+    const map = [];
+    const objects = []; // {x, y, type, hp}
+
+    // --- INITIALIZATION ---
+    function init() {
+        resize();
+        generateMap();
+        window.addEventListener('resize', resize);
+        // Input handlers
+        canvas.addEventListener('pointerdown', handleInput);
         
-        if(!txt) inp.value = '';
-        addMsg(text, 'user');
+        // Loop
+        requestAnimationFrame(loop);
+        
+        // Stats ticker
+        setInterval(() => {
+            player.hunger = Math.max(0, player.hunger - 1);
+            player.energy = Math.max(0, player.energy - 0.5);
+            if(player.hunger === 0) player.hp = Math.max(0, player.hp - 1);
+            updateHUD();
+        }, 2000);
+    }
 
-        try {
-            const res = await fetch(`${API_BASE}/api/rpg/action`, {
-                method: 'POST',
-                headers: {'Content-Type':'application/json', 'ngrok-skip-browser-warning':'true'},
-                body: JSON.stringify({user_id: USER_ID, message: text})
-            });
-            const data = await res.json();
-            
-            if(data.text) {
-                // Чистим текст от системных тегов для красоты
-                let clean = data.text.replace('[СИСТЕМА]', '').trim();
-                addMsg(clean, 'ai');
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        // Отключаем сглаживание для пиксель-арта
+        ctx.imageSmoothingEnabled = false;
+    }
+
+    // --- GENERATION ---
+    function generateMap() {
+        for(let x=0; x<MAP_SIZE; x++) {
+            map[x] = [];
+            for(let y=0; y<MAP_SIZE; y++) {
+                // Шум воды
+                if(Math.random() < 0.05) {
+                    map[x][y] = T.WATER;
+                } else {
+                    map[x][y] = T.GRASS;
+                    // Генерация объектов
+                    if(Math.random() < 0.15) {
+                        objects.push({x, y, type: T.TREE, hp: 3});
+                    } else if (Math.random() < 0.05) {
+                        objects.push({x, y, type: T.ROCK, hp: 4});
+                    }
+                }
             }
-            if(data.hud_update) updateHUD(data.hud_update);
-        } catch(e) {
-            addMsg("Ошибка связи...", "system");
         }
+        // Очищаем спавн
+        const pc = Math.floor(MAP_SIZE/2);
+        map[pc][pc] = T.GRASS;
+        removeObjectAt(pc, pc);
     }
 
-    function updateHUD(d) {
-        if(d.name) document.getElementById('hud-name').innerText = d.name;
-        if(d.credits) document.getElementById('hud-money').innerText = d.credits;
-        if(d.class_type) document.getElementById('prof-class').innerText = d.class_type;
-        if(d.inv) {
-            const grid = document.getElementById('inv-grid');
-            grid.innerHTML = d.inv.length ? d.inv.map(i => `<div class="inv-slot" onclick="send('Использовать ${i}')">📦<div style="font-size:9px">${i}</div></div>`).join('') : '<div style="color:#555">Пусто</div>';
-        }
+    function removeObjectAt(x, y) {
+        const idx = objects.findIndex(o => o.x === x && o.y === y);
+        if(idx !== -1) objects.splice(idx, 1);
     }
-
-    inp.addEventListener('keypress', e => { if(e.key === 'Enter') send(); });
     
-    // Auto-ping
-    setTimeout(() => send('Статус'), 500);
+    function getObjectAt(x, y) {
+        return objects.find(o => o.x === x && o.y === y);
+    }
+
+    // --- GAME LOGIC ---
+    function loop(timestamp) {
+        const dt = timestamp - lastTime;
+        lastTime = timestamp;
+
+        updatePlayer(dt);
+        updateCamera();
+        render();
+
+        requestAnimationFrame(loop);
+    }
+
+    function updatePlayer(dt) {
+        if (player.targetX !== null && player.targetY !== null) {
+            player.moveTimer += dt;
+            if (player.moveTimer > player.speed) {
+                player.moveTimer = 0;
+                
+                // Simple movement logic (one step closer)
+                const dx = Math.sign(player.targetX - player.x);
+                const dy = Math.sign(player.targetY - player.y);
+                
+                let nextX = player.x + dx;
+                let nextY = player.y + dy;
+
+                // Move X first if possible
+                if(dx !== 0 && canWalk(nextX, player.y)) {
+                    player.x += dx;
+                } else if (dy !== 0 && canWalk(player.x, nextY)) {
+                    player.y += dy;
+                }
+
+                // Check arrival
+                if (player.x === player.targetX && player.y === player.targetY) {
+                    // Arrived - perform action
+                    player.targetX = null;
+                    player.targetY = null;
+                    performActionAt(player.x, player.y);
+                }
+            }
+        }
+    }
+
+    function canWalk(x, y) {
+        if(x < 0 || y < 0 || x >= MAP_SIZE || y >= MAP_SIZE) return false;
+        if(map[x][y] === T.WATER) return false;
+        // Нельзя ходить сквозь камни, но можно сквозь деревья (чтобы рубить стоя на них)
+        const obj = getObjectAt(x, y);
+        if(obj && (obj.type === T.ROCK || obj.type === T.WALL)) return false;
+        return true;
+    }
+
+    function updateCamera() {
+        // Камера центрируется на игроке
+        const cx = player.x * TILE_SIZE + TILE_SIZE/2;
+        const cy = player.y * TILE_SIZE + TILE_SIZE/2;
+        
+        camera.x = cx - canvas.width / 2;
+        camera.y = cy - canvas.height / 2;
+    }
+
+    // --- INTERACTION ---
+    function handleInput(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clickX = e.clientX - rect.left + camera.x;
+        const clickY = e.clientY - rect.top + camera.y;
+
+        const tileX = Math.floor(clickX / TILE_SIZE);
+        const tileY = Math.floor(clickY / TILE_SIZE);
+
+        if(tileX < 0 || tileX >= MAP_SIZE || tileY < 0 || tileY >= MAP_SIZE) return;
+
+        if (mode === 'move') {
+            // Идем и взаимодействуем
+            player.targetX = tileX;
+            player.targetY = tileY;
+            
+            // Визуальный фидбек клика
+            createParticle(tileX, tileY, '📍');
+        } 
+        else if (mode === 'build' && buildTarget) {
+            tryBuild(tileX, tileY, buildTarget);
+        }
+    }
+
+    function performActionAt(x, y) {
+        const obj = getObjectAt(x, y);
+        if(obj) {
+            if(obj.type === T.TREE) {
+                log("Рубим дерево...");
+                player.inv.wood += 2;
+                player.energy -= 2;
+                removeObjectAt(x, y);
+                createParticle(x, y, '🪵');
+            } else if (obj.type === T.ROCK) {
+                log("Добываем камень...");
+                player.inv.stone += 1;
+                player.energy -= 3;
+                removeObjectAt(x, y);
+                createParticle(x, y, '⛏️');
+            }
+        } else {
+            // Если тайл пустой и есть шанс найти еду
+            if(map[x][y] === T.GRASS && Math.random() < 0.3) {
+                log("Найдена ягода");
+                player.inv.food += 1;
+                createParticle(x, y, '🍒');
+            }
+        }
+        updateHUD();
+    }
+
+    function tryBuild(x, y, type) {
+        // Проверка дистанции (строим рядом)
+        const dist = Math.abs(player.x - x) + Math.abs(player.y - y);
+        if(dist > 2) {
+            log("Слишком далеко!");
+            return;
+        }
+
+        const cost = getBuildCost(type);
+        if(player.inv.wood >= cost.wood && player.inv.stone >= cost.stone) {
+            // Списываем ресурсы
+            player.inv.wood -= cost.wood;
+            player.inv.stone -= cost.stone;
+
+            // Ставим
+            if(type === 'floor') map[x][y] = T.FLOOR;
+            else if(type === 'wall') objects.push({x, y, type: T.WALL, hp: 10});
+            else if(type === 'fire') objects.push({x, y, type: T.FIRE, hp: 5});
+
+            log(`Построено: ${type}`);
+            createParticle(x, y, '🔨');
+            updateHUD();
+        } else {
+            log("Не хватает ресурсов!");
+        }
+    }
+
+    // --- RENDER ---
+    function render() {
+        // Очистка
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Границы отрисовки
+        const startCol = Math.floor(camera.x / TILE_SIZE);
+        const endCol = startCol + (canvas.width / TILE_SIZE) + 1;
+        const startRow = Math.floor(camera.y / TILE_SIZE);
+        const endRow = startRow + (canvas.height / TILE_SIZE) + 1;
+
+        // Рисуем карту
+        for(let c = startCol; c <= endCol; c++) {
+            for(let r = startRow; r <= endRow; r++) {
+                if(c >= 0 && c < MAP_SIZE && r >= 0 && r < MAP_SIZE) {
+                    const tileType = map[c][r];
+                    const x = c * TILE_SIZE - camera.x;
+                    const y = r * TILE_SIZE - camera.y;
+
+                    // Фон тайла
+                    ctx.fillStyle = COLORS[tileType] || '#f0f';
+                    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                    
+                    // Сетка (опционально)
+                    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+                    ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+
+                    // Декор воды
+                    if(tileType === T.WATER) {
+                         ctx.font = '20px Arial';
+                         ctx.fillText('🌊', x + 5, y + 30);
+                    }
+                }
+            }
+        }
+
+        // Рисуем объекты
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '32px Arial';
+
+        objects.forEach(obj => {
+            const screenX = obj.x * TILE_SIZE - camera.x + TILE_SIZE/2;
+            const screenY = obj.y * TILE_SIZE - camera.y + TILE_SIZE/2 + 4;
+            
+            // Проверка видимости для оптимизации
+            if(screenX > -TILE_SIZE && screenX < canvas.width + TILE_SIZE && 
+               screenY > -TILE_SIZE && screenY < canvas.height + TILE_SIZE) {
+                ctx.fillText(SPRITES[obj.type], screenX, screenY);
+            }
+        });
+
+        // Рисуем игрока
+        const px = player.x * TILE_SIZE - camera.x + TILE_SIZE/2;
+        const py = player.y * TILE_SIZE - camera.y + TILE_SIZE/2;
+        
+        ctx.font = '36px Arial';
+        ctx.fillText('👨‍🚀', px, py);
+
+        // Индикатор цели движения
+        if(player.targetX !== null) {
+            const tx = player.targetX * TILE_SIZE - camera.x + TILE_SIZE/2;
+            const ty = player.targetY * TILE_SIZE - camera.y + TILE_SIZE/2;
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.beginPath();
+            ctx.arc(tx, ty, 5, 0, Math.PI*2);
+            ctx.fill();
+        }
+        
+        // Сетка курсора в режиме стройки
+        if(mode === 'build') {
+             // Можно добавить подсветку тайла под курсором (нужно отслеживать pointermove)
+        }
+    }
+
+    // --- UI FUNCTIONS ---
+    function updateHUD() {
+        document.getElementById('hp-bar').style.width = player.hp + '%';
+        document.getElementById('hunger-bar').style.width = player.hunger + '%';
+        document.getElementById('energy-bar').style.width = player.energy + '%';
+        
+        document.getElementById('res-wood').innerText = player.inv.wood;
+        document.getElementById('res-stone').innerText = player.inv.stone;
+        document.getElementById('res-food').innerText = player.inv.food;
+    }
+
+    function log(msg) {
+        const div = document.createElement('div');
+        div.className = 'log-entry';
+        div.innerText = `> ${msg}`;
+        const container = document.getElementById('game-log');
+        container.appendChild(div);
+        if(container.children.length > 5) container.removeChild(container.firstChild);
+    }
+
+    function createParticle(tileX, tileY, symbol) {
+        // Простая заглушка для визуальных эффектов
+    }
+
+    // --- CONTROL MODES ---
+    function setMode(m) {
+        mode = m;
+        document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`mode-${m}`).classList.add('active');
+        
+        const menu = document.getElementById('build-menu');
+        if(m === 'build') {
+            menu.classList.add('visible');
+            buildTarget = null;
+        } else {
+            menu.classList.remove('visible');
+        }
+    }
+
+    function selectBuild(type) {
+        buildTarget = type;
+        document.querySelectorAll('.build-item').forEach(b => b.classList.remove('selected'));
+        event.currentTarget.classList.add('selected');
+        log(`Выбрано: ${type}`);
+    }
+
+    function getBuildCost(type) {
+        if(type === 'wall') return {wood: 5, stone: 0};
+        if(type === 'floor') return {wood: 2, stone: 0};
+        if(type === 'fire') return {wood: 10, stone: 5};
+        if(type === 'bed') return {wood: 20, stone: 0};
+        return {wood:0, stone:0};
+    }
+
+    function eatFood() {
+        if(player.inv.food > 0) {
+            player.inv.food--;
+            player.hunger = Math.min(100, player.hunger + 20);
+            player.hp = Math.min(100, player.hp + 5);
+            log("Ням-ням! +20 Сытости");
+            updateHUD();
+        } else {
+            log("Нет еды!");
+        }
+    }
+
+    // START
+    init();
+
 </script>
 </body>
 </html>
