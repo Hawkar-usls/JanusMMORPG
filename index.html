@@ -3,82 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SURVIVAL CORE v3.1</title>
+    <title>SURVIVAL FIX 3.2</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { --bg: #111; --panel: #1e1e1e; --border: #444; --accent: #f0a500; --text: #eee; }
         body { margin: 0; background: var(--bg); color: var(--text); overflow: hidden; font-family: 'Courier New', monospace; touch-action: none; user-select: none; }
         canvas { display: block; image-rendering: pixelated; width: 100%; height: 100%; }
 
-        /* UI OVERLAY */
+        /* UI */
         .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         .pointer { pointer-events: auto; }
 
         /* HUD */
-        .hud { position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 4px; width: 120px; }
+        .hud { position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 4px; width: 120px; z-index: 10; }
         .bar-wrap { background: #000; height: 8px; border: 1px solid #333; position: relative; }
         .bar-fill { height: 100%; transition: width 0.2s; }
         .c-hp { background: #d33; } .c-food { background: #fa0; } .c-water { background: #0af; }
-        .version { font-size: 10px; color: #555; margin-top: 5px; }
 
-        /* BOTTOM DOCK */
-        .dock { position: absolute; bottom: 20px; left: 0; width: 100%; display: flex; justify-content: center; gap: 15px; pointer-events: auto; }
+        /* DOCK */
+        .dock { position: absolute; bottom: 20px; left: 0; width: 100%; display: flex; justify-content: center; gap: 15px; pointer-events: auto; z-index: 10; }
         .dock-btn { 
             width: 50px; height: 50px; background: var(--panel); border: 2px solid var(--border); 
             border-radius: 8px; font-size: 24px; display: flex; justify-content: center; align-items: center; 
             box-shadow: 0 4px 6px rgba(0,0,0,0.5); cursor: pointer;
         }
-        .dock-btn:active { transform: scale(0.95); border-color: var(--accent); }
 
         /* MODALS */
         .modal {
             display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 90%; max-width: 400px; max-height: 80%; background: var(--panel); 
-            border: 2px solid var(--border); box-shadow: 0 0 20px rgba(0,0,0,0.8);
-            flex-direction: column; padding: 10px; border-radius: 4px; pointer-events: auto; z-index: 100;
+            border: 2px solid var(--border); flex-direction: column; padding: 10px; border-radius: 4px; pointer-events: auto; z-index: 100;
         }
         .modal.open { display: flex; }
-        .modal-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
-        .close-btn { color: #f44; cursor: pointer; }
-
-        /* GRID */
+        .modal-header { display: flex; justify-content: space-between; border-bottom: 1px solid #444; padding-bottom: 5px; margin-bottom: 5px;}
         .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; overflow-y: auto; padding: 5px; }
-        .slot { 
-            aspect-ratio: 1; background: #2a2a2a; border: 1px solid #333; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-size: 10px; cursor: pointer; position: relative;
+        .slot { aspect-ratio: 1; background: #2a2a2a; border: 1px solid #333; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; }
+        .count { position: absolute; bottom: 2px; right: 2px; font-size: 10px; color: #aaa; }
+        
+        /* DETAILS & BUTTONS */
+        .details { margin-top: 10px; border-top: 1px solid #444; padding-top: 5px; text-align: center; }
+        .btn-action { background: var(--accent); border: none; padding: 5px 10px; color: #000; font-weight: bold; margin-top: 5px; cursor: pointer; }
+
+        /* EMERGENCY RESET */
+        #panic-btn {
+            position: absolute; top: 10px; right: 10px; background: #f00; color: #fff; border: 1px solid #fff;
+            padding: 5px; font-size: 10px; z-index: 9999; cursor: pointer; pointer-events: auto;
         }
-        .slot.selected { border-color: var(--accent); background: #333; }
-        .count { position: absolute; bottom: 2px; right: 2px; color: #aaa; }
-
-        /* ACTIONS */
-        .details { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); min-height: 40px; display: flex; gap: 5px; justify-content: center; }
-        .btn-action { background: #333; color: white; border: 1px solid #555; padding: 8px; cursor: pointer; font-size: 12px; }
-        .btn-action.primary { background: var(--accent); color: #000; border: none; font-weight: bold; }
-
-        /* TOAST */
-        .toast-area { position: absolute; top: 60px; width: 100%; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 5px; }
-        .toast { background: rgba(0,0,0,0.8); color: #fff; padding: 5px 10px; border-radius: 4px; font-size: 12px; animation: fadeUp 2s forwards; }
-        @keyframes fadeUp { 0%{opacity:1; transform:translateY(0)} 100%{opacity:0; transform:translateY(-20px)} }
-
-        #build-hint { position: absolute; top: 20px; width: 100%; text-align: center; color: #0f0; font-weight: bold; text-shadow: 1px 1px 0 #000; display: none; }
+        #error-log {
+            position: absolute; top: 50%; left: 10%; width: 80%; color: red; background: rgba(0,0,0,0.8);
+            font-size: 12px; pointer-events: none; z-index: 9000; word-wrap: break-word;
+        }
+        .toast { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 5px; border-radius: 4px; animation: fade 2s forwards; }
+        @keyframes fade { 0%{opacity:1} 100%{opacity:0; transform:translate(-50%, -20px)} }
     </style>
 </head>
 <body>
 
     <canvas id="game"></canvas>
+    <div id="error-log"></div>
+    <button id="panic-btn" onclick="hardReset()">СБРОС SAVE</button>
 
     <div class="ui-layer">
-        <div class="hud pointer">
+        <div class="hud">
             <div class="bar-wrap"><div class="bar-fill c-hp" id="bar-hp" style="width:100%"></div></div>
             <div class="bar-wrap"><div class="bar-fill c-food" id="bar-food" style="width:100%"></div></div>
             <div class="bar-wrap"><div class="bar-fill c-water" id="bar-water" style="width:100%"></div></div>
-            <div class="version">BUILD 3.1</div>
         </div>
+        <div id="toasts"></div>
         
-        <div class="toast-area" id="toasts"></div>
-        <div id="build-hint">СТРОЙКА: Выбери место</div>
-
         <div class="dock">
             <div class="dock-btn" onclick="openInv()">🎒</div>
             <div class="dock-btn" onclick="openCraft()">🔨</div>
@@ -86,617 +78,358 @@
         </div>
 
         <div class="modal" id="main-modal">
-            <div class="modal-header"><span id="modal-title">...</span> <span class="close-btn" onclick="closeModal()">✕</span></div>
-            <div class="grid" id="modal-grid"></div>
-            <div class="details" id="modal-details"></div>
+            <div class="modal-header"><span id="m-title">...</span> <span onclick="closeModal()" style="color:#f44">✕</span></div>
+            <div class="grid" id="m-grid"></div>
+            <div class="details" id="m-details"></div>
         </div>
     </div>
 
 <script>
-    const VERSION = "3.1";
+    // --- ERROR HANDLING ---
+    window.onerror = function(msg, url, line) {
+        document.getElementById('error-log').innerHTML += `<br>Error: ${msg} line ${line}`;
+    };
+
+    function hardReset() {
+        localStorage.removeItem('surv_save_v3_2');
+        location.reload();
+    }
+
     // --- DB ---
     const ITEMS = {
         'wood': { name: 'Дерево', type: 'res', icon: '🌲' },
         'stone': { name: 'Камень', type: 'res', icon: '🪨' },
-        'fiber': { name: 'Волокно', type: 'res', icon: '🌿' },
-        'meat': { name: 'Мясо', type: 'food', val: 25, icon: '🍖' },
+        'meat': { name: 'Мясо', type: 'food', val: 20, icon: '🍖' },
         'leather': { name: 'Кожа', type: 'res', icon: '📜' },
         'berry': { name: 'Ягода', type: 'food', val: 10, water: 5, icon: '🍒' },
-        
-        'axe_stone': { name: 'Топор', type: 'tool', slot: 'hand', dmg: 5, speed: 2, icon: '🪓' },
-        'sword_iron': { name: 'Меч', type: 'weapon', slot: 'hand', dmg: 15, speed: 1, icon: '⚔️' },
-        'chest': { name: 'Сундук', type: 'build', id: 200, icon: '📦' },
-        
-        'wall_wood': { name: 'Стена', type: 'build', id: 101, icon: '🧱' },
-        'floor_wood': { name: 'Пол', type: 'build', id: 102, icon: '⬜' },
-        'campfire': { name: 'Костер', type: 'build', id: 103, icon: '🔥' }
+        'axe': { name: 'Топор', type: 'tool', slot: 'hand', speed: 2, dmg: 4, icon: '🪓' },
+        'sword': { name: 'Меч', type: 'weapon', slot: 'hand', speed: 1, dmg: 10, icon: '⚔️' },
+        'wall': { name: 'Стена', type: 'build', id: 101, icon: '🧱' },
+        'chest': { name: 'Сундук', type: 'build', id: 200, icon: '📦' }
     };
 
     const RECIPES = [
-        { out: 'axe_stone', n: 1, cost: { 'wood': 3, 'stone': 2 } },
-        { out: 'sword_iron', n: 1, cost: { 'wood': 5, 'stone': 5 } },
-        { out: 'wall_wood', n: 1, cost: { 'wood': 4 } },
-        { out: 'floor_wood', n: 1, cost: { 'wood': 2 } },
-        { out: 'chest', n: 1, cost: { 'wood': 10 } },
-        { out: 'campfire', n: 1, cost: { 'wood': 5, 'stone': 2 } }
+        { out: 'axe', n: 1, cost: {'wood':3, 'stone':2} },
+        { out: 'sword', n: 1, cost: {'wood':5, 'stone':5} },
+        { out: 'wall', n: 1, cost: {'wood':4} },
+        { out: 'chest', n: 1, cost: {'wood':10} }
     ];
 
-    // --- GAME ENGINE ---
+    // --- VARS ---
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
     const SCALE = 3; 
-    const TILE = 16 * SCALE; 
+    const TILE = 16 * SCALE;
     
     let camera = { x: 0, y: 0 };
-    let mode = 'play'; 
-    let buildId = null; 
-    let activeContainer = null; // ID of chest currently open
+    let mode = 'play';
+    let buildId = null;
+    let activeCont = null;
 
-    let player = {
-        x: 0, y: 0,
-        hp: 100, food: 100, water: 100,
-        inv: { 'axe_stone': 1 }, 
-        equip: { hand: 'axe_stone' },
-        action: null // { type, target, timer, maxTime }
-    };
-
-    let world = {
-        structures: [], // {x, y, id, uid}
-        containers: {}, // { uid: { items: {} } }
-        removed: [],
-        animals: [] // { type, x, y, hp, state, timer }
-    };
+    let player = { x: 0, y: 0, hp: 100, food: 100, water: 100, inv: {}, equip: {hand:null}, action: null };
+    let world = { structures: [], containers: {}, removed: [], animals: [] };
 
     // --- INIT ---
-    // Load Save
-    const save = localStorage.getItem('surv_save_v3_1');
-    if(save) {
-        const d = JSON.parse(save);
-        player = d.player;
-        world = d.world;
-        if(!world.containers) world.containers = {};
-        if(!world.animals) world.animals = [];
-    }
+    try {
+        const save = localStorage.getItem('surv_save_v3_2');
+        if(save) {
+            const d = JSON.parse(save);
+            player = d.player || player;
+            world = d.world || world;
+            // Patch data just in case
+            if(!world.structures) world.structures = [];
+            if(!world.containers) world.containers = {};
+            if(!world.removed) world.removed = [];
+            if(!world.animals) world.animals = [];
+        }
 
-    function init() {
         resize();
         window.addEventListener('resize', resize);
-        canvas.addEventListener('pointerdown', handleInput);
-        requestAnimationFrame(render);
-        setInterval(tick, 1000);
+        canvas.addEventListener('pointerdown', input);
         
-        // Spawn initial animals if empty
-        if(world.animals.length === 0) spawnAnimals(5);
+        if(world.animals.length === 0) spawnAnimals();
+
+        requestAnimationFrame(loop);
+        setInterval(tick, 1000);
+
+    } catch(e) {
+        document.getElementById('error-log').innerText = "INIT ERROR: " + e.message;
+    }
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        ctx.imageSmoothingEnabled = false;
     }
 
     function tick() {
-        // Stats
-        player.food = Math.max(0, player.food - 0.5);
-        player.water = Math.max(0, player.water - 0.8);
-        if(player.food <= 0 || player.water <= 0) player.hp -= 1;
+        // Needs
+        player.food -= 0.2; player.water -= 0.5;
+        if(player.food<0) player.food=0; if(player.water<0) player.water=0;
+        if(player.food===0 || player.water===0) player.hp -= 1;
         updateHUD();
 
-        // Animals Logic
+        // Animals AI
         world.animals.forEach(a => {
-            if(Math.random() < 0.05) { // Change state
-                a.tx = a.x + (Math.random()*200 - 100);
-                a.ty = a.y + (Math.random()*200 - 100);
+            if(Math.random()<0.02) {
+                a.tx = a.x + (Math.random()*100-50);
+                a.ty = a.y + (Math.random()*100-50);
             }
             if(a.tx) {
-                const dx = a.tx - a.x;
-                const dy = a.ty - a.y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                if(dist > 5) {
-                    a.x += (dx/dist) * (a.type==='hare'?3:1);
-                    a.y += (dy/dist) * (a.type==='hare'?3:1);
-                } else { a.tx = null; }
+                const dx = a.tx - a.x, dy = a.ty - a.y;
+                const d = Math.sqrt(dx*dx+dy*dy);
+                if(d>2) { a.x += (dx/d)*1; a.y += (dy/d)*1; }
+                else a.tx = null;
             }
         });
-        
-        // Respawn animals
-        if(world.animals.length < 5 && Math.random() < 0.1) spawnAnimals(1);
     }
 
-    function spawnAnimals(n) {
-        for(let i=0; i<n; i++) {
-            const type = Math.random()>0.5 ? 'boar' : 'hare';
-            const ang = Math.random() * Math.PI * 2;
-            const dist = 300 + Math.random()*300;
-            world.animals.push({
-                type: type,
-                x: player.x + Math.cos(ang)*dist,
-                y: player.y + Math.sin(ang)*dist,
-                hp: type==='boar'?30:10
-            });
+    function spawnAnimals() {
+        for(let i=0; i<5; i++) {
+            world.animals.push({ x: (Math.random()*1000)-500, y: (Math.random()*1000)-500, hp: 20, type: 'boar' });
         }
     }
 
-    // --- INPUT & PHYSICS ---
-    function handleInput(e) {
+    // --- INPUT ---
+    function input(e) {
         const r = canvas.getBoundingClientRect();
         const mx = e.clientX - r.left + camera.x;
         const my = e.clientY - r.top + camera.y;
 
         if(mode === 'build') {
-            tryBuild(mx, my);
+            build(mx, my);
             return;
         }
 
-        const obj = getObjectAt(mx, my); // Trees, Rocks, Walls, Chests, Animals
+        const obj = getObj(mx, my);
         
-        // 1. Attack / Harvest
         if(obj) {
-            player.action = null; // Reset prev action
+            if(obj.type === 'chest') { openChest(obj.uid); return; }
             
-            if(obj.type === 'structure' && obj.id === 200) {
-                // Open Chest
-                openChest(obj.uid);
-                return;
-            }
+            // Action
+            const tId = player.equip.hand;
+            let speed = 3000;
+            if(tId && ITEMS[tId]) speed /= ITEMS[tId].speed;
+            if(obj.type === 'animal') speed = 500;
 
-            // Determine tool speed
-            let speedMs = 3000; // Hand default
-            let isTool = false;
-            const toolId = player.equip.hand;
-            
-            if(toolId && ITEMS[toolId]) {
-                const def = ITEMS[toolId];
-                if(def.speed) speedMs /= def.speed;
-                isTool = true;
-            }
-            
-            // Logic for Deconstruct / Attack
-            let actionType = 'harvest';
-            if(obj.type === 'structure') {
-                 if(toolId === 'axe_stone') actionType = 'deconstruct';
-                 else { toast('Нужен топор для разбора'); return; }
-            }
-            if(obj.type === 'animal') {
-                actionType = 'attack';
-                speedMs = 500; // Attack is fast
-            }
-
-            moveTo(mx, my, () => {
-                player.action = {
-                    type: actionType,
-                    target: obj,
-                    timer: 0,
-                    max: speedMs
-                };
-            }, 40); // Stop 40px away
-        } 
-        // 2. Move
-        else {
-            moveTo(mx, my, null);
+            player.target = { x: obj.x, y: obj.y, stop: 30, cb: () => {
+                player.action = { t: 0, max: speed, obj: obj, type: obj.type==='animal'?'atk':'mine' };
+            }};
+        } else {
+            player.target = { x: mx, y: my, stop: 0 };
+            player.action = null;
         }
     }
 
-    function moveTo(tx, ty, cb, stopDist = 0) {
-        player.target = { x: tx, y: ty, cb: cb, stopDist: stopDist };
-    }
-
-    function updatePhysics() {
+    function loop() {
+        // Physics
         if(player.target) {
             const dx = player.target.x - player.x;
             const dy = player.target.y - player.y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            
-            if(dist > player.target.stopDist + 5) {
-                const step = 4;
-                const nx = player.x + (dx/dist) * step;
-                const ny = player.y + (dy/dist) * step;
-
-                // Collision Check
-                if(!isSolid(nx, ny)) {
-                    player.x = nx;
-                    player.y = ny;
-                    player.facing = dx>0 ? 1 : -1;
-                } else {
-                    player.target = null; // Stop at wall
-                }
+            const d = Math.sqrt(dx*dx + dy*dy);
+            if(d > player.target.stop + 5) {
+                const mx = (dx/d)*4, my = (dy/d)*4;
+                if(!solid(player.x+mx, player.y+my)) {
+                    player.x += mx; player.y += my;
+                } else player.target = null;
             } else {
-                // Arrived
-                const cb = player.target.cb;
+                if(player.target.cb) player.target.cb();
                 player.target = null;
-                if(cb) cb();
             }
         }
 
-        // Handle Action (Chop/Mine/Attack)
         if(player.action) {
-            player.action.timer += 16; // ~60fps
-            if(player.action.timer >= player.action.max) {
-                finishAction();
-            }
+            player.action.t += 16;
+            if(player.action.t >= player.action.max) finishAct();
         }
+
+        // Camera
+        camera.x += (player.x - canvas.width/2 - camera.x) * 0.1;
+        camera.y += (player.y - canvas.height/2 - camera.y) * 0.1;
+
+        render();
+        requestAnimationFrame(loop);
     }
 
-    function isSolid(x, y) {
-        // Simple radius check against solid objects
-        const objs = getVisibleObjects();
-        for(let o of objs) {
-            if(o.type === 'structure' && o.id !== 102 && o.id !== 200) { // Floor and chest not solid? Wall is solid
-                 if(Math.abs(o.x - x) < 20 && Math.abs(o.y - y) < 20) return true;
-            }
-            if(o.type === 'tree' || o.type === 'rock') {
-                 if(Math.abs(o.x - x) < 15 && Math.abs(o.y - y) < 15) return true;
-            }
-        }
-        return false;
+    function solid(x, y) {
+        // Simple collision
+        return world.structures.some(s => s.id===101 && Math.abs(s.x-x)<20 && Math.abs(s.y-y)<20);
     }
 
-    function finishAction() {
-        const act = player.action;
-        const tgt = act.target;
+    function finishAct() {
+        const o = player.action.obj;
         player.action = null;
-
-        if(act.type === 'harvest') {
-            if(tgt.type === 'tree') { addItem('wood', 3); addItem('berry', 1); toast('+Дерево'); removeObj(tgt); }
-            if(tgt.type === 'rock') { addItem('stone', 2); toast('+Камень'); removeObj(tgt); }
+        if(o.type === 'tree') { addItem('wood', 3); addItem('berry', 1); rmObj(o); toast('+Дерево'); }
+        if(o.type === 'rock') { addItem('stone', 2); rmObj(o); toast('+Камень'); }
+        if(o.type === 'wall' && player.equip.hand === 'axe') { 
+            rmStruct(o.uid); addItem('wood', 2); toast('Разобрано'); 
         }
-        else if (act.type === 'deconstruct') {
-            addItem('wood', 2); toast('Разобрано');
-            removeStructure(tgt.uid);
-        }
-        else if (act.type === 'attack') {
-            const dmg = player.equip.hand ? (ITEMS[player.equip.hand].dmg || 2) : 2;
-            tgt.hp -= dmg;
-            createEffect(tgt.x, tgt.y, `-${dmg}`);
-            
-            if(tgt.hp <= 0) {
-                // Kill
-                if(tgt.type === 'boar') { addItem('meat', 2); addItem('leather', 1); toast('+Мясо +Кожа'); }
-                if(tgt.type === 'hare') { addItem('meat', 1); toast('+Мясо'); }
-                // Remove from array
-                const idx = world.animals.indexOf(tgt);
-                if(idx > -1) world.animals.splice(idx, 1);
+        if(o.type === 'animal') {
+            o.hp -= (player.equip.hand && ITEMS[player.equip.hand].dmg) || 2;
+            toast(`Hit: ${o.hp}`);
+            if(o.hp <= 0) {
+                world.animals = world.animals.filter(a => a !== o);
+                addItem('meat', 2); addItem('leather', 1);
+                toast('Убит!');
             }
         }
-    }
-
-    // --- SYSTEMS ---
-    function addItem(id, qty, contId = null) {
-        const target = contId ? world.containers[contId].items : player.inv;
-        if(!target[id]) target[id] = 0;
-        target[id] += qty;
         saveGame();
     }
 
-    function removeItem(id, qty, contId = null) {
-        const target = contId ? world.containers[contId].items : player.inv;
-        if(target[id] >= qty) {
-            target[id] -= qty;
-            if(target[id] <= 0) delete target[id];
-            return true;
-        }
-        return false;
+    // --- SYSTEMS ---
+    function addItem(id, n, cont) {
+        const t = cont ? world.containers[cont].items : player.inv;
+        t[id] = (t[id]||0) + n;
+        updateHUD();
     }
-
-    function useItem(id, fromContainer = false) {
-        if(fromContainer) {
-            // Take from chest to inv
-            if(removeItem(id, 1, activeContainer)) {
-                addItem(id, 1);
-                openChest(activeContainer); // refresh
-            }
-            return;
-        }
-
-        const def = ITEMS[id];
-        if(activeContainer) {
-            // Put to chest
-            if(removeItem(id, 1)) {
-                addItem(id, 1, activeContainer);
-                openChest(activeContainer);
-            }
-            return;
-        }
-
-        // Regular usage
-        if(def.type === 'food') {
-            player.food = Math.min(100, player.food + def.val);
-            if(def.water) player.water = Math.min(100, player.water + def.water);
-            removeItem(id, 1);
-            toast('Съедено');
-        } 
-        else if (def.type === 'build') {
-            mode = 'build';
-            buildId = id;
-            document.getElementById('build-hint').style.display = 'block';
-            closeModal();
-        }
-        else if (def.slot) {
-            // Equip
-            if(player.equip[def.slot]) addItem(player.equip[def.slot], 1);
-            player.equip[def.slot] = id;
-            removeItem(id, 1);
-            toast(`Взято: ${def.name}`);
-            openInv();
-        }
-    }
-
-    // --- BUILDING ---
-    function tryBuild(mx, my) {
-        const gx = Math.floor(mx / TILE) * TILE;
-        const gy = Math.floor(my / TILE) * TILE;
+    
+    function build(mx, my) {
+        const gx = Math.floor(mx/TILE)*TILE, gy = Math.floor(my/TILE)*TILE;
+        if(solid(gx, gy)) return;
         
-        // Check collision with other structures
-        if(world.structures.some(s => s.x === gx && s.y === gy)) {
-            toast('Занято!'); return;
-        }
-
-        if(removeItem(buildId, 1)) {
-            const uid = Date.now() + Math.random();
+        if(player.inv[buildId] > 0) {
+            player.inv[buildId]--;
+            const uid = Date.now();
             world.structures.push({ x: gx, y: gy, id: ITEMS[buildId].id, uid: uid });
-            
-            if(ITEMS[buildId].id === 200) { // Chest
-                world.containers[uid] = { items: {} };
-            }
-            
+            if(ITEMS[buildId].id === 200) world.containers[uid] = { items: {} };
             toast('Построено');
-            if(!player.inv[buildId]) {
-                mode = 'play';
-                document.getElementById('build-hint').style.display = 'none';
-            }
+            if(player.inv[buildId] <= 0) { mode = 'play'; document.getElementById('main-modal').classList.remove('open'); }
             saveGame();
         }
     }
 
-    function removeStructure(uid) {
-        const idx = world.structures.findIndex(s => s.uid === uid);
-        if(idx > -1) world.structures.splice(idx, 1);
-        if(world.containers[uid]) delete world.containers[uid];
-    }
-
-    function removeObj(o) {
-        if(o.type === 'tree' || o.type === 'rock') {
-            world.removed.push(`${o.x}:${o.y}`);
-        }
+    function rmObj(o) { world.removed.push(`${o.x}:${o.y}`); }
+    function rmStruct(uid) { 
+        world.structures = world.structures.filter(s => s.uid !== uid); 
+        delete world.containers[uid]; 
     }
 
     // --- UI ---
-    function openInv() {
-        activeContainer = null;
-        renderModal('РЮКЗАК', player.inv);
-    }
-
-    function openCraft() {
-        activeContainer = null;
-        const m = document.getElementById('modal-grid');
-        const d = document.getElementById('modal-details');
-        m.innerHTML = ''; d.innerHTML = '';
-        document.getElementById('modal-title').innerText = 'КРАФТ';
+    function openInv() { renderModal('РЮКЗАК', player.inv); activeCont = null; }
+    function openCraft() { 
+        const g = document.getElementById('m-grid'); g.innerHTML = '';
+        document.getElementById('m-title').innerText = 'КРАФТ';
         document.getElementById('main-modal').classList.add('open');
-
         RECIPES.forEach(r => {
-            const def = ITEMS[r.out];
-            const el = document.createElement('div');
-            el.className = 'slot';
-            el.innerHTML = `<div>${def.icon}</div>`;
+            const el = document.createElement('div'); el.className='slot';
+            el.innerHTML = ITEMS[r.out].icon;
             el.onclick = () => {
-                let costStr = Object.entries(r.cost).map(([k,v]) => `${v}${ITEMS[k].icon}`).join(' ');
-                d.innerHTML = `
-                    <div style="text-align:center; width:100%">
-                        <b>${def.name}</b><br>
-                        <small>${costStr}</small><br><br>
-                        <button class="btn-action primary" onclick="doCraft('${r.out}')">Создать</button>
-                    </div>`;
+                // Craft logic inline for brevity
+                let can = true;
+                for(let k in r.cost) if((player.inv[k]||0)<r.cost[k]) can=false;
+                if(can) {
+                    for(let k in r.cost) player.inv[k] -= r.cost[k];
+                    addItem(r.out, r.n);
+                    toast('Скрафчено!');
+                    openCraft(); // redraw
+                } else toast('Мало ресурсов');
             };
-            m.appendChild(el);
+            g.appendChild(el);
         });
+        document.getElementById('m-details').innerHTML = '';
     }
 
     function openChest(uid) {
-        activeContainer = uid;
-        // Merge player inv and chest items visually (simplified: just show chest for now? No, need transfer)
-        // Let's show Chest Items first, then Player items
-        renderModal('СУНДУК (Клик чтоб взять/положить)', world.containers[uid].items, true);
-        
-        // Append player items below for transfer? 
-        // For simplicity: renderModal shows container. If container open, clicking item in it = take. 
-        // We also need to see player inventory to put things IN.
-        // Let's just Render Mixed View: [Chest Items] --Divider-- [Player Items]
-        const grid = document.getElementById('modal-grid');
-        
-        // Add divider
-        const div = document.createElement('div');
-        div.style.gridColumn = '1 / -1'; div.style.borderTop = '1px solid #555'; div.style.margin = '5px 0'; div.style.color = '#777';
-        div.innerText = 'РЮКЗАК (Клик чтоб положить)';
-        grid.appendChild(div);
-
-        for(let id in player.inv) {
-            const el = createSlot(id, player.inv[id], false);
-            grid.appendChild(el);
+        activeCont = uid;
+        renderModal('СУНДУК', world.containers[uid].items);
+        // Append player items for transfer
+        const g = document.getElementById('m-grid');
+        const sep = document.createElement('div'); sep.style.gridColumn='1/-1'; sep.innerText='Рюкзак ▼'; g.appendChild(sep);
+        for(let k in player.inv) {
+            const el = document.createElement('div'); el.className='slot';
+            el.innerHTML = `${ITEMS[k].icon}<div class="count">${player.inv[k]}</div>`;
+            el.onclick = () => {
+                if(player.inv[k] > 0) { player.inv[k]--; addItem(k, 1, uid); openChest(uid); }
+            };
+            g.appendChild(el);
         }
     }
 
-    function doCraft(outKey) {
-        const r = RECIPES.find(x => x.out === outKey);
-        // check
-        for(let k in r.cost) if((player.inv[k]||0) < r.cost[k]) return;
-        // pay
-        for(let k in r.cost) removeItem(k, r.cost[k]);
-        // get
-        addItem(outKey, r.n);
-        toast(`Создано: ${ITEMS[outKey].name}`);
-        openCraft();
-    }
-
-    function renderModal(title, source, isContainer = false) {
-        document.getElementById('modal-title').innerText = title;
+    function renderModal(tit, src) {
+        const g = document.getElementById('m-grid'); g.innerHTML = '';
+        document.getElementById('m-title').innerText = tit;
         document.getElementById('main-modal').classList.add('open');
-        const grid = document.getElementById('modal-grid');
-        grid.innerHTML = '';
-        document.getElementById('modal-details').innerHTML = '';
-
-        for(let id in source) {
-            grid.appendChild(createSlot(id, source[id], isContainer));
+        for(let k in src) {
+            if(src[k]<=0) continue;
+            const el = document.createElement('div'); el.className='slot';
+            el.innerHTML = `${ITEMS[k].icon}<div class="count">${src[k]}</div>`;
+            el.onclick = () => {
+                if(activeCont) {
+                    // Take from chest
+                    src[k]--; addItem(k, 1); openChest(activeCont);
+                } else {
+                    // Use/Equip
+                    const d = document.getElementById('m-details');
+                    const def = ITEMS[k];
+                    d.innerHTML = `<b>${def.name}</b><br>`;
+                    if(def.slot) d.innerHTML += `<button class="btn-action" onclick="player.equip['${def.slot}']='${k}'; toast('Надето'); closeModal()">НАДЕТЬ</button>`;
+                    if(def.type==='food') d.innerHTML += `<button class="btn-action" onclick="player.inv['${k}']--; player.food+=20; toast('Ням'); openInv()">СЪЕСТЬ</button>`;
+                    if(def.type==='build') d.innerHTML += `<button class="btn-action" onclick="mode='build'; buildId='${k}'; closeModal(); toast('Строй!')">СТРОИТЬ</button>`;
+                }
+            };
+            g.appendChild(el);
         }
     }
-
-    function createSlot(id, count, isContainer) {
-        const def = ITEMS[id];
-        const el = document.createElement('div');
-        el.className = 'slot';
-        el.innerHTML = `<div>${def.icon}</div><div class="count">${count}</div>`;
-        el.onclick = () => {
-            if(activeContainer) {
-                // Transfer Mode
-                useItem(id, isContainer);
-            } else {
-                // Normal Inv Mode
-                const d = document.getElementById('modal-details');
-                let html = `<button class="btn-action primary" onclick="useItem('${id}')">Использовать</button>`;
-                if(def.slot) html = `<button class="btn-action primary" onclick="useItem('${id}')">Надеть</button>`;
-                d.innerHTML = `<b>${def.name}</b> ${html}`;
-            }
-        };
-        return el;
-    }
-
-    function closeModal() { document.getElementById('main-modal').classList.remove('open'); activeContainer = null; }
-    function saveGame() { localStorage.setItem('surv_save_v3_1', JSON.stringify({player, world})); }
+    
+    function closeModal() { document.getElementById('main-modal').classList.remove('open'); mode = 'play'; }
+    function toast(msg) { const d=document.createElement('div'); d.className='toast'; d.innerText=msg; document.getElementById('toasts').appendChild(d); setTimeout(()=>d.remove(),2000); }
     function updateHUD() {
-        document.getElementById('bar-hp').style.width = player.hp + '%';
-        document.getElementById('bar-food').style.width = player.food + '%';
-        document.getElementById('bar-water').style.width = player.water + '%';
+        document.getElementById('bar-hp').style.width=player.hp+'%';
+        document.getElementById('bar-food').style.width=player.food+'%';
+        document.getElementById('bar-water').style.width=player.water+'%';
     }
-    function toast(t) { 
-        const el = document.createElement('div'); el.className='toast'; el.innerText=t;
-        document.getElementById('toasts').appendChild(el);
-        setTimeout(()=>el.remove(), 2000);
-    }
+    function saveGame() { localStorage.setItem('surv_save_v3_2', JSON.stringify({player, world})); }
 
     // --- RENDER ---
     function render() {
-        updatePhysics();
-        camera.x += (player.x - canvas.width/2 - camera.x) * 0.1;
-        camera.y += (player.y - canvas.height/2 - camera.y) * 0.1;
-
-        // BG
         ctx.fillStyle = '#2d3e26'; ctx.fillRect(0,0, canvas.width, canvas.height);
-
-        const objs = getVisibleObjects();
-        // Add Animals
-        world.animals.forEach(a => objs.push({...a, type:'animal'}));
-        // Add Player
-        objs.push({ ...player, type: 'player' });
-
-        objs.sort((a,b) => a.y - b.y);
+        
+        const objs = getObjs();
+        objs.push({type:'player', x:player.x, y:player.y});
+        objs.sort((a,b)=>a.y-b.y);
 
         objs.forEach(o => {
-            const sx = o.x - camera.x;
-            const sy = o.y - camera.y;
-            if(o.type === 'player') drawPlayer(sx, sy);
-            else if(o.type === 'animal') drawAnimal(ctx, sx, sy, o);
-            else drawObject(sx, sy, o);
+            const x = o.x - camera.x, y = o.y - camera.y;
+            const s = SCALE;
+            if(o.type==='player') {
+                ctx.fillStyle='#dcb'; ctx.fillRect(x-9, y-27, 18, 21); // Body
+                ctx.fillStyle='#334'; ctx.fillRect(x-6, y-6, 6, 12); ctx.fillRect(x+3, y-6, 6, 12); // Legs
+                if(player.equip.hand) ctx.fillText(ITEMS[player.equip.hand].icon, x+15, y-15);
+                // Action Bar
+                if(player.action) {
+                    ctx.fillStyle='#0f0'; ctx.fillRect(x-15, y-40, 30*(player.action.t/player.action.max), 4);
+                }
+            }
+            else if(o.type==='tree') { ctx.fillStyle='#533'; ctx.fillRect(x-6, y-12, 12, 12); ctx.fillStyle='#264'; ctx.beginPath(); ctx.arc(x, y-30, 24, 0, 7); ctx.fill(); }
+            else if(o.type==='rock') { ctx.fillStyle='#777'; ctx.beginPath(); ctx.arc(x, y, 15, 3.14, 0); ctx.fill(); }
+            else if(o.type==='wall') { ctx.fillStyle='#643'; ctx.fillRect(x, y-30, 48, 48); }
+            else if(o.type==='chest') { ctx.fillStyle='#853'; ctx.fillRect(x-15, y-15, 30, 24); ctx.fillText('📦', x-8, y+2); }
+            else if(o.type==='animal') { 
+                ctx.fillStyle='#532'; ctx.fillRect(x-15, y-15, 30, 18); 
+                ctx.fillStyle='red'; ctx.fillRect(x-10, y-25, 20*(o.hp/20), 3);
+            }
         });
-
-        // Action Bar
-        if(player.action) {
-            const sx = player.x - camera.x;
-            const sy = player.y - camera.y - 40;
-            ctx.fillStyle = '#000'; ctx.fillRect(sx-15, sy, 30, 4);
-            ctx.fillStyle = '#0f0'; ctx.fillRect(sx-15, sy, 30 * (player.action.timer/player.action.max), 4);
-        }
-
-        // Build Preview
-        if(mode === 'build') {
-             // ... simple cursor ...
-        }
-
-        requestAnimationFrame(render);
     }
 
-    function getVisibleObjects() {
-        // ... (Same procedural logic as v3.0 but filtering 'removed') ...
-        const res = [];
-        world.structures.forEach(s => res.push({...s, type:'structure'}));
-
-        const cx = Math.floor(camera.x / 100);
-        const cy = Math.floor(camera.y / 100);
-        for(let x = cx-1; x < cx + (canvas.width/100)+2; x++) {
-            for(let y = cy-1; y < cy + (canvas.height/100)+2; y++) {
-                const rx = x*100+50; const ry = y*100+50;
-                const val = Math.sin(x*12.989+y*78.233)*43758.545;
-                const rand = val - Math.floor(val);
-                if(world.removed.includes(`${rx}:${ry}`)) continue;
-                // Collision check to prevent spawning inside buildings
-                if(world.structures.some(s => Math.abs(s.x-rx)<30 && Math.abs(s.y-ry)<30)) continue;
-
-                if(rand > 0.7) res.push({type:'tree', x:rx, y:ry});
-                else if(rand < 0.1) res.push({type:'rock', x:rx, y:ry});
-            }
+    function getObjs() {
+        let res = [];
+        world.structures.forEach(s => res.push({...s, type: s.id===101?'wall':'chest'}));
+        world.animals.forEach(a => res.push({...a, type:'animal'}));
+        
+        const cx = Math.floor(camera.x/100), cy = Math.floor(camera.y/100);
+        for(let x=cx-1; x<cx+5; x++) for(let y=cy-1; y<cy+8; y++) {
+            const rx=x*100+50, ry=y*100+50;
+            if(world.removed.includes(`${rx}:${ry}`)) continue;
+            if(Math.sin(x*12+y*78)>0.7) res.push({type:'tree', x:rx, y:ry});
+            else if(Math.sin(x*12+y*78)<-0.8) res.push({type:'rock', x:rx, y:ry});
         }
         return res;
     }
-
-    function getObjectAt(mx, my) {
-        // Priority: Animals -> Structures -> Resources
-        const all = getVisibleObjects();
-        const anim = world.animals.find(a => Math.abs(a.x-mx)<20 && Math.abs(a.y-my)<20);
-        if(anim) return {...anim, type:'animal'};
-        
-        return all.find(o => Math.abs(o.x - mx) < 20 && Math.abs(o.y - my) < 20 && o.type !== 'player');
-    }
-
-    // --- DRAWING ---
-    function rect(x,y,w,h,c) { ctx.fillStyle=c; ctx.fillRect(x,y,w,h); }
     
-    function drawObject(x,y,o) {
-        const s = SCALE;
-        if(o.type==='tree') { rect(x-2*s,y-4*s,4*s,8*s,'#533'); ctx.beginPath(); ctx.fillStyle='#264'; ctx.arc(x,y-12*s,10*s,0,Math.PI*2); ctx.fill(); }
-        if(o.type==='rock') { ctx.beginPath(); ctx.fillStyle='#777'; ctx.arc(x,y,6*s,Math.PI,0); ctx.fill(); }
-        if(o.type==='structure') {
-            if(o.id===101) rect(x,y-12*s,16*s,16*s,'#643');
-            if(o.id===102) rect(x,y,16*s,16*s,'#432');
-            if(o.id===200) { rect(x-6*s,y-6*s,12*s,10*s,'#853'); rect(x-6*s,y-9*s,12*s,3*s,'#964'); } // Chest
-            if(o.id===103) ctx.fillText('🔥',x-5,y);
-        }
+    function getObj(mx, my) {
+        return getObjs().find(o => Math.abs(o.x-mx)<20 && Math.abs(o.y-my)<20 && o.type!=='player');
     }
 
-    function drawAnimal(ctx, x, y, a) {
-        const s = SCALE;
-        const f = (a.tx && a.tx < a.x) ? -1 : 1;
-        ctx.save();
-        if(f===-1) { ctx.translate(x,y); ctx.scale(-1,1); ctx.translate(-x,-y); }
-        
-        if(a.type === 'boar') {
-            rect(x-5*s, y-6*s, 10*s, 6*s, '#532'); // Body
-            rect(x+4*s, y-5*s, 4*s, 4*s, '#532'); // Head
-            rect(x+7*s, y-4*s, 2*s, 1*s, '#fff'); // Tusk
-            rect(x-4*s, y, 2*s, 3*s, '#321'); // Legs
-            rect(x+2*s, y, 2*s, 3*s, '#321');
-        } else { // Hare
-            rect(x-3*s, y-4*s, 6*s, 5*s, '#ccc');
-            rect(x+2*s, y-5*s, 3*s, 3*s, '#ccc');
-            rect(x+3*s, y-8*s, 1*s, 3*s, '#fff'); // Ear
-        }
-        // HP bar for animal
-        if(a.hp < (a.type==='boar'?30:10)) {
-            ctx.fillStyle='red'; ctx.fillRect(x-10, y-30, 20, 3);
-            ctx.fillStyle='#0f0'; ctx.fillRect(x-10, y-30, 20*(a.hp/30), 3);
-        }
-        ctx.restore();
-    }
-
-    function drawPlayer(x, y) {
-        const s = SCALE;
-        const bob = Math.sin(Date.now()/150)*2;
-        // ... (Same body as v3.0) ...
-        rect(x-3*s, y-9*s+bob, 6*s, 7*s, '#dcb'); // Body (naked)
-        rect(x-3*s, y-15*s+bob, 6*s, 6*s, '#dcb'); // Head
-        rect(x-2*s, y-2*s, 2*s, 4*s, '#334'); // Legs
-        rect(x+1*s, y-2*s, 2*s, 4*s, '#334');
-        if(player.equip.hand === 'axe_stone') ctx.fillText('🪓', x+5*s, y-5*s+bob);
-        if(player.equip.hand === 'sword_iron') ctx.fillText('⚔️', x+5*s, y-5*s+bob);
-    }
-    
-    // VFX
-    let effects = [];
-    function createEffect(x,y,t) { /* simplified */ }
-
-    init();
 </script>
 </body>
 </html>
