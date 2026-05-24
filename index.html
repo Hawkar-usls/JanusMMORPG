@@ -1,756 +1,529 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JANUS: PROTOCOL OMEGA (v10.0)</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        :root { 
-            --bg: #050505; --panel: rgba(20,20,20,0.95); 
-            --border: #333; --accent: #ffd700; --danger: #ff3333;
-            --text-main: #e0e0e0; --text-dim: #777;
-        }
-        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; background: var(--bg); color: var(--text-main); font-family: 'JetBrains Mono', monospace; overflow: hidden; }
-        
-        canvas { display: block; width: 100vw; height: 100dvh; image-rendering: pixelated; }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#080705" />
+  <meta name="description" content="Initium Chronicles: Janus Genesis web shell with TrashCoin economy." />
+  <title>Initium Chronicles | Janus Genesis</title>
+  <style>
+    :root {
+      --bg: #080705;
+      --paper: #f0dcc0;
+      --ink: #f7eddf;
+      --muted: #b89f80;
+      --gold: #d6a84d;
+      --amber: #ffcf73;
+      --blood: #8e2d24;
+      --violet: #6f56b5;
+      --green: #76c88d;
+      --panel: rgba(23, 17, 13, .78);
+      --panel-strong: rgba(10, 8, 7, .88);
+      --line: rgba(255, 207, 115, .23);
+      --shadow: 0 28px 90px rgba(0, 0, 0, .52);
+      --radius: 28px;
+      --font: Georgia, 'Times New Roman', serif;
+      --ui: Verdana, Geneva, sans-serif;
+    }
 
-        /* HUD LAYOUT */
-        .hud-top { position: absolute; top: 10px; left: 10px; z-index: 10; display: flex; flex-direction: column; gap: 5px; width: 140px; }
-        .stat-row { display: flex; align-items: center; justify-content: space-between; font-size: 10px; }
-        .bar-track { flex: 1; height: 6px; background: #222; margin-left: 8px; border: 1px solid #444; border-radius: 3px; overflow: hidden; }
-        .bar-fill { height: 100%; transition: width 0.3s ease; }
-        
-        .c-hp { background: #ff4444; } .c-food { background: #ffaa00; } 
-        .c-water { background: #00aaff; } .c-temp { background: #ff7700; }
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--bg); }
+    body {
+      min-height: 100%;
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--ui);
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 20% 15%, rgba(214, 168, 77, .18), transparent 30vw),
+        radial-gradient(circle at 80% 10%, rgba(111, 86, 181, .18), transparent 34vw),
+        radial-gradient(circle at 55% 88%, rgba(142, 45, 36, .22), transparent 38vw),
+        linear-gradient(145deg, #090705 0%, #17100c 42%, #060504 100%);
+    }
 
-        .time-display { position: absolute; top: 10px; right: 10px; font-size: 12px; color: var(--accent); font-weight: bold; text-shadow: 0 0 10px var(--accent); z-index: 10; }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: -20%;
+      pointer-events: none;
+      opacity: .2;
+      background-image:
+        linear-gradient(30deg, transparent 47%, rgba(255, 207, 115, .16) 49%, transparent 51%),
+        linear-gradient(150deg, transparent 47%, rgba(255, 255, 255, .08) 49%, transparent 51%);
+      background-size: 72px 72px;
+      mask-image: radial-gradient(circle at center, #000 0%, transparent 72%);
+      animation: drift 26s linear infinite;
+    }
 
-        /* BOTTOM DOCK */
-        .dock { 
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); 
-            background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
-            padding: 8px 16px; display: flex; gap: 20px; z-index: 20; backdrop-filter: blur(5px);
-        }
-        .dock-btn { 
-            font-size: 24px; cursor: pointer; transition: transform 0.1s; opacity: 0.8;
-            position: relative;
-        }
-        .dock-btn:active { transform: scale(0.9); }
-        .dock-btn.active { opacity: 1; color: var(--accent); }
+    @keyframes drift { to { transform: translate3d(72px, 72px, 0); } }
 
-        /* UNIVERSAL MODAL */
-        .modal {
-            display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 90%; max-width: 450px; height: 70%; max-height: 600px;
-            background: #111; border: 1px solid var(--border); border-radius: 12px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.9); z-index: 100;
-            flex-direction: column; overflow: hidden;
-        }
-        .modal.open { display: flex; animation: slideUp 0.2s ease-out; }
-        @keyframes slideUp { from { opacity: 0; transform: translate(-50%, -40%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+    .wrap {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 22px 0 42px;
+    }
 
-        /* TABS */
-        .modal-tabs { display: flex; border-bottom: 1px solid var(--border); background: #1a1a1a; }
-        .tab { flex: 1; padding: 12px; text-align: center; font-size: 11px; cursor: pointer; color: var(--text-dim); transition: 0.2s; }
-        .tab.active { color: var(--accent); background: #222; border-bottom: 2px solid var(--accent); }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
 
-        /* CONTENT AREA */
-        .modal-content { flex: 1; overflow-y: auto; padding: 10px; }
-        
-        /* GRID & SLOTS */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 8px; }
-        .slot { 
-            aspect-ratio: 1; background: #1e1e1e; border: 1px solid #333; border-radius: 6px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-size: 20px; position: relative; cursor: pointer; transition: 0.1s;
-        }
-        .slot:hover { background: #252525; }
-        .slot.available { border-color: #5b5; background: rgba(0,50,0,0.2); }
-        .slot.unavailable { opacity: 0.4; filter: grayscale(1); }
-        .slot-count { position: absolute; bottom: 2px; right: 4px; font-size: 10px; color: #fff; font-weight: bold; }
-        
-        /* CRAFT ITEM INFO */
-        .craft-info { display: flex; flex-direction: column; align-items: center; padding: 10px; border-top: 1px solid var(--border); background: #151515; }
-        .res-cost { font-size: 10px; color: #aaa; margin: 5px 0; display: flex; gap: 8px; }
-        .res-cost span.missing { color: var(--danger); }
-        .res-cost span.ok { color: #5b5; }
-        .btn-craft { 
-            width: 100%; padding: 10px; background: var(--accent); color: #000; border: none; 
-            border-radius: 6px; font-weight: bold; cursor: pointer; opacity: 1;
-        }
-        .btn-craft:disabled { background: #333; color: #555; cursor: not-allowed; }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      min-width: 0;
+    }
 
-        /* TOASTS */
-        .toast-container { position: absolute; top: 80px; left: 0; width: 100%; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 5px; z-index: 200; }
-        .toast { background: rgba(0,0,0,0.8); color: var(--accent); padding: 6px 12px; border-radius: 20px; font-size: 11px; border: 1px solid rgba(255,215,0,0.2); animation: fadeOut 2s forwards; }
-        @keyframes fadeOut { 0%{opacity:1;transform:translateY(0)} 100%{opacity:0;transform:translateY(-20px)} }
+    .sigil {
+      width: 50px;
+      height: 50px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      color: var(--amber);
+      font: 700 27px/1 var(--font);
+      background:
+        radial-gradient(circle at 30% 20%, rgba(255, 207, 115, .5), transparent 24px),
+        linear-gradient(145deg, rgba(111, 86, 181, .55), rgba(142, 45, 36, .5));
+      border: 1px solid var(--line);
+      box-shadow: inset 0 0 28px rgba(255, 207, 115, .12), 0 14px 40px rgba(0,0,0,.35);
+    }
 
-        #error-log { display: none; position: absolute; top: 0; left: 0; background: red; color: white; padding: 10px; z-index: 9999; }
-    </style>
+    .brand h1 {
+      margin: 0;
+      font: 700 clamp(18px, 4vw, 28px)/1.05 var(--font);
+      letter-spacing: .04em;
+      white-space: nowrap;
+    }
+
+    .brand small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      color: var(--amber);
+      background: rgba(255, 207, 115, .08);
+      padding: 9px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.08fr .92fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      overflow: hidden;
+    }
+
+    .hero-copy {
+      padding: clamp(22px, 5vw, 46px);
+      position: relative;
+      min-height: 560px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .hero-copy::after {
+      content: '';
+      position: absolute;
+      right: -80px;
+      bottom: -100px;
+      width: 310px;
+      height: 310px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(214, 168, 77, .18), transparent 68%);
+      pointer-events: none;
+    }
+
+    .kicker {
+      color: var(--gold);
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      font-size: 12px;
+      margin-bottom: 18px;
+    }
+
+    .hero h2 {
+      margin: 0;
+      font: 800 clamp(43px, 9vw, 92px)/.84 var(--font);
+      letter-spacing: -.055em;
+      text-wrap: balance;
+    }
+
+    .hero h2 span { color: var(--amber); }
+
+    .lead {
+      max-width: 720px;
+      margin: 22px 0 0;
+      color: #eadcc9;
+      font: 18px/1.65 var(--font);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 30px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .btn {
+      appearance: none;
+      border: 0;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      border-radius: 16px;
+      padding: 13px 18px;
+      font-weight: 800;
+      color: #1c1007;
+      background: linear-gradient(135deg, #ffe0a0, #d39a37);
+      box-shadow: 0 12px 34px rgba(214, 168, 77, .28);
+    }
+
+    .btn.secondary {
+      color: var(--ink);
+      background: rgba(255, 255, 255, .07);
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 30px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat {
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 18px;
+      padding: 13px;
+      background: rgba(0,0,0,.22);
+    }
+
+    .stat b { display: block; color: var(--amber); font-size: 20px; }
+    .stat span { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+    .terminal {
+      min-height: 560px;
+      display: flex;
+      flex-direction: column;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(118, 200, 141, .1), transparent 40%),
+        var(--panel-strong);
+    }
+
+    .terminal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 17px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .dots { display: flex; gap: 7px; }
+    .dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--blood); }
+    .dots i:nth-child(2) { background: var(--gold); }
+    .dots i:nth-child(3) { background: var(--green); }
+
+    .terminal-body {
+      flex: 1;
+      padding: 18px;
+      display: grid;
+      gap: 13px;
+      align-content: start;
+    }
+
+    .line {
+      padding: 14px 15px;
+      border-radius: 17px;
+      background: rgba(255,255,255,.055);
+      border: 1px solid rgba(255,255,255,.07);
+      line-height: 1.5;
+      color: #eee1cf;
+    }
+
+    .line.system { color: var(--amber); }
+    .line.player { margin-left: 24px; color: #d8f5df; border-color: rgba(118, 200, 141, .22); }
+
+    .choice-grid {
+      display: grid;
+      gap: 10px;
+      padding: 0 18px 18px;
+    }
+
+    .choice {
+      text-align: left;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 207, 115, .08);
+      padding: 14px;
+      cursor: pointer;
+      transition: transform .16s ease, background .16s ease;
+    }
+
+    .choice:hover { transform: translateY(-1px); background: rgba(255, 207, 115, .14); }
+
+    .panels {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 22px;
+    }
+
+    .panel { padding: 20px; }
+    .panel h3 { margin: 0 0 12px; color: var(--amber); font: 700 22px/1.1 var(--font); }
+    .panel p, .panel li { color: #d8c7b1; line-height: 1.55; font-size: 14px; }
+    .panel ul { padding-left: 18px; margin: 0; }
+
+    .config {
+      margin-top: 22px;
+      padding: 18px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .config label { color: var(--muted); font-size: 13px; }
+    .config input {
+      width: 100%;
+      margin-top: 7px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(0,0,0,.28);
+      color: var(--ink);
+      padding: 13px 14px;
+      outline: none;
+    }
+
+    .footer {
+      color: rgba(240, 220, 192, .55);
+      text-align: center;
+      margin-top: 28px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 860px) {
+      .wrap { width: min(100% - 18px, 680px); padding-top: 12px; }
+      .topbar { align-items: flex-start; }
+      .pill { display: none; }
+      .hero { grid-template-columns: 1fr; }
+      .hero-copy, .terminal { min-height: auto; }
+      .status-grid, .panels { grid-template-columns: 1fr; }
+      .hero h2 { font-size: clamp(46px, 18vw, 76px); }
+      .lead { font-size: 16px; }
+      .config { grid-template-columns: 1fr; }
+      .btn { width: 100%; }
+    }
+  </style>
 </head>
 <body>
-
-    <div id="error-log"></div>
-    <canvas id="game"></canvas>
-
-    <div class="hud-top">
-        <div class="stat-row">HP <div class="bar-track"><div class="bar-fill c-hp" id="hp-bar"></div></div></div>
-        <div class="stat-row">EDA <div class="bar-track"><div class="bar-fill c-food" id="food-bar"></div></div></div>
-        <div class="stat-row">H2O <div class="bar-track"><div class="bar-fill c-water" id="water-bar"></div></div></div>
-        <div class="stat-row">TMP <div class="bar-track"><div class="bar-fill c-temp" id="temp-bar"></div></div></div>
-    </div>
-    
-    <div class="time-display" id="clock">12:00</div>
-    <div class="toast-container" id="toasts"></div>
-
-    <div class="dock">
-        <div class="dock-btn" onclick="UI.toggle('inv')">🎒</div>
-        <div class="dock-btn" onclick="UI.toggle('craft')">🔨</div>
-        <div class="dock-btn" onclick="Game.save(); UI.toast('System Saved')">💾</div>
-    </div>
-
-    <div class="modal" id="main-window">
-        <div class="modal-tabs">
-            <div class="tab" id="tab-inv" onclick="UI.switchTab('inv')">РЮКЗАК</div>
-            <div class="tab" id="tab-craft" onclick="UI.switchTab('craft')">СОЗДАНИЕ</div>
-            <div class="tab" onclick="UI.close()">ЗАКРЫТЬ [X]</div>
+  <main class="wrap">
+    <header class="topbar">
+      <div class="brand">
+        <div class="sigil">J</div>
+        <div>
+          <h1>Initium Chronicles</h1>
+          <small>Janus Genesis / TrashCoin economy</small>
         </div>
-        
-        <div class="modal-content" id="view-inv" style="display:none">
-            <div class="grid" id="inv-grid"></div>
-            <div class="craft-info" id="inv-actions" style="display:none">
-                <div id="selected-item-name" style="font-weight:bold; margin-bottom:5px;"></div>
-                <button class="btn-craft" id="btn-use-item">Использовать</button>
-            </div>
+      </div>
+      <div class="pill" id="netStatus">NAS API: not configured</div>
+    </header>
+
+    <section class="hero">
+      <article class="card hero-copy">
+        <div>
+          <div class="kicker">The Mirror Protocol</div>
+          <h2>Текстовая MMO,<br><span>где выбор не отматывается.</span></h2>
+          <p class="lead">
+            Janus Genesis становится web-shell и Telegram-first игрой: состояние игрока, лор,
+            инвентарь и TrashCoin живут в единой SQLite-экономике на NAS. Браузер показывает врата,
+            Telegram ведёт игрока внутрь, а Янус записывает следы в чёрный ящик.
+          </p>
         </div>
 
-        <div class="modal-content" id="view-craft" style="display:none">
-            <div class="grid" id="craft-grid"></div>
+        <div>
+          <div class="actions">
+            <a class="btn" href="https://t.me/Ini_Chron_bot" target="_blank" rel="noopener">Войти через Telegram</a>
+            <a class="btn secondary" href="tg://resolve?domain=Ini_Chron_bot">Открыть в приложении</a>
+          </div>
+          <div class="status-grid">
+            <div class="stat"><b id="depth">1</b><span>Depth</span></div>
+            <div class="stat"><b id="entropy">0.10</b><span>Entropy</span></div>
+            <div class="stat"><b id="trashcoin">?</b><span>TrashCoin</span></div>
+          </div>
         </div>
-        <div class="craft-info" id="craft-actions" style="display:none">
-            <div id="craft-name" style="font-weight:bold; margin-bottom:5px;"></div>
-            <div class="res-cost" id="craft-cost"></div>
-            <button class="btn-craft" id="btn-do-craft">СОЗДАТЬ</button>
+      </article>
+
+      <article class="card terminal" aria-label="Janus Genesis preview">
+        <div class="terminal-head">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <small>BLACKBOX PREVIEW</small>
         </div>
-    </div>
+        <div class="terminal-body" id="log">
+          <div class="line system">JANUS: зеркало проснулось. Пока NAS-ворота не открыты наружу, это демо-контур без списаний и наград.</div>
+          <div class="line">Ты стоишь перед дверью, на которой нет ручки. В щели между створками слышен шелест монет, будто кто-то пересчитывает твои будущие ошибки.</div>
+          <div class="line player">Выбери первый импульс. Чёрный ящик уже смотрит.</div>
+        </div>
+        <div class="choice-grid">
+          <button class="choice" data-choice="touch">Коснуться двери и принять зеркало</button>
+          <button class="choice" data-choice="listen">Прислушаться к шуму TrashCoin под полом</button>
+          <button class="choice" data-choice="telegram">Продолжить в Telegram, где состояние станет настоящим</button>
+        </div>
+      </article>
+    </section>
 
-<script>
-/** * JANUS ENGINE v10.0 
- * "Looking Forward"
- */
+    <section class="panels">
+      <article class="card panel">
+        <h3>Единая экономика</h3>
+        <p>TrashCoin привязан к Telegram user_id. Один ledger кормит Ленчика, MMO и будущий слот. Никаких монет из воздуха вне журнала операций.</p>
+      </article>
+      <article class="card panel">
+        <h3>Black Box</h3>
+        <p>Каждое значимое действие игрока будет записываться в события MMO. Откатить судьбу нельзя, максимум — красиво соврать себе, что это был план.</p>
+      </article>
+      <article class="card panel">
+        <h3>NAS-first</h3>
+        <p>Gemini и тяжёлые действия вызываются дозированно. NAS не должен превращаться в печку ради одного героя, который решил потрогать подозрительную стену.</p>
+      </article>
+    </section>
 
-// --- DATA & CONFIG ---
-const DB = {
-    items: {
-        'wood': { name: 'Дерево', icon: '🌲', type: 'res' },
-        'stone': { name: 'Камень', icon: '🪨', type: 'res' },
-        'iron': { name: 'Железо', icon: '⛓️', type: 'res' },
-        'fiber': { name: 'Волокно', icon: '🧶', type: 'res' },
-        'meat': { name: 'Сырое мясо', icon: '🥩', type: 'food', val: 10, poison: 5 },
-        'meat_cooked': { name: 'Стейк', icon: '🍖', type: 'food', val: 40 },
-        'berry': { name: 'Ягоды', icon: '🍒', type: 'food', val: 15, water: 10 },
-        
-        'axe': { name: 'Топор', icon: '🪓', type: 'tool', slot: 'hand', speed: 2, desc: 'Быстро рубит дерево' },
-        'pick': { name: 'Кирка', icon: '⛏️', type: 'tool', slot: 'hand', speed: 2, desc: 'Ломает камни' },
-        'sword': { name: 'Катана', icon: '⚔️', type: 'weapon', slot: 'hand', dmg: 20, desc: 'Острый клинок' },
-        
-        'armor_l': { name: 'Кожанка', icon: '🧥', type: 'armor', slot: 'chest', def: 10 },
-        
-        'wall': { name: 'Стена', icon: '🧱', type: 'build', id: 10 },
-        'floor': { name: 'Пол', icon: '⬜', type: 'build', id: 11 },
-        'fire': { name: 'Костер', icon: '🔥', type: 'build', id: 12 },
-        'chest': { name: 'Сундук', icon: '📦', type: 'build', id: 13 }
-    },
-    recipes: [
-        { id: 'axe', out: 'axe', n: 1, cost: { wood: 3, stone: 2 } },
-        { id: 'pick', out: 'pick', n: 1, cost: { wood: 2, stone: 3 } },
-        { id: 'sword', out: 'sword', n: 1, cost: { wood: 5, iron: 2 } },
-        { id: 'armor_l', out: 'armor_l', n: 1, cost: { fiber: 10 } },
-        { id: 'fire', out: 'fire', n: 1, cost: { wood: 10, stone: 5 } },
-        { id: 'wall', out: 'wall', n: 1, cost: { wood: 5 } },
-        { id: 'floor', out: 'floor', n: 1, cost: { wood: 2 } },
-        { id: 'chest', out: 'chest', n: 1, cost: { wood: 15 } }
-    ]
-};
+    <section class="card config">
+      <label>
+        Future NAS MMO API endpoint
+        <input id="apiBase" placeholder="https://your-domain.example/api/mmo или локальный reverse proxy" />
+      </label>
+      <button class="btn secondary" id="saveApi">Сохранить endpoint</button>
+    </section>
 
-// --- CORE ENGINE ---
-const Game = {
-    canvas: document.getElementById('game'),
-    ctx: document.getElementById('game').getContext('2d'),
-    width: 0, height: 0,
-    
-    state: {
-        camera: { x: 0, y: 0 },
-        time: 720, // Minutes (12:00)
-        daySpeed: 0.5, // 1 real sec = 0.5 game min
-        mode: 'play', // play, build
-        buildId: null
-    },
-    
-    player: {
-        x: 0, y: 0,
-        hp: 100, food: 100, water: 100, temp: 100,
-        inv: { 'wood': 5, 'berry': 2 }, // Starting items
-        equip: { hand: null, chest: null },
-        action: null,
-        facing: 1
-    },
-    
-    world: {
-        seed: 123,
-        chunks: {}, // Sparse map
-        objects: [], // Interactive objects
-        structures: [],
-        animals: []
-    },
+    <footer class="footer">
+      No Telegram or Gemini tokens are stored here. This page is only the public shell; the real economy lives server-side on NAS.<br>
+      Build: Initium Chronicles web shell v0.1
+    </footer>
+  </main>
 
-    init() {
-        this.resize();
-        window.addEventListener('resize', () => this.resize());
-        this.canvas.addEventListener('pointerdown', (e) => Input.handle(e));
-        
-        // Load or Gen
-        if(!this.load()) this.genWorld();
-        
-        // Loop
-        requestAnimationFrame(t => this.loop(t));
-        setInterval(() => this.tick(), 1000);
-    },
+  <script>
+    const log = document.getElementById('log');
+    const depthEl = document.getElementById('depth');
+    const entropyEl = document.getElementById('entropy');
+    const trashEl = document.getElementById('trashcoin');
+    const netStatus = document.getElementById('netStatus');
+    const apiBase = document.getElementById('apiBase');
+    const savedApi = localStorage.getItem('JANUS_MMO_API_BASE') || '';
+    apiBase.value = savedApi;
 
-    resize() {
-        this.width = window.innerWidth;
-        this.height = window.innerHeight;
-        this.canvas.width = this.width;
-        this.canvas.height = this.height;
-        this.ctx.imageSmoothingEnabled = false;
-    },
+    const state = {
+      depth: Number(localStorage.getItem('JANUS_DEMO_DEPTH') || 1),
+      entropy: Number(localStorage.getItem('JANUS_DEMO_ENTROPY') || 0.10),
+      trashcoin: localStorage.getItem('JANUS_DEMO_TRASHCOIN') || '?'
+    };
 
-    genWorld() {
-        // Procedural generation around 0,0
-        for(let i=0; i<50; i++) {
-            let x = (Math.random()*2000)-1000;
-            let y = (Math.random()*2000)-1000;
-            if(Math.random() > 0.3) this.world.objects.push({type:'tree', x, y, hp:3});
-            else this.world.objects.push({type:'rock', x, y, hp:3});
-        }
-        // Animals
-        for(let i=0; i<10; i++) {
-            this.world.animals.push({
-                type: Math.random()>0.5?'boar':'rabbit', 
-                x: (Math.random()*1000)-500, 
-                y: (Math.random()*1000)-500,
-                hp: 20, state: 'idle', timer: 0
-            });
-        }
-    },
-
-    tick() {
-        // Time
-        this.state.time += this.state.daySpeed;
-        if(this.state.time >= 1440) this.state.time = 0;
-        
-        // Stats Decay
-        this.player.food = Math.max(0, this.player.food - 0.2);
-        this.player.water = Math.max(0, this.player.water - 0.3);
-        
-        // Temperature logic based on Time
-        const hour = Math.floor(this.state.time / 60);
-        const isNight = hour < 6 || hour > 20;
-        if(isNight && !this.player.equip.chest) {
-            // Check fire nearby
-            const nearFire = this.world.structures.some(s => s.id===12 && Math.hypot(s.x-this.player.x, s.y-this.player.y) < 150);
-            if(!nearFire) this.player.temp = Math.max(0, this.player.temp - 2);
-            else this.player.temp = Math.min(100, this.player.temp + 5);
-        } else {
-            this.player.temp = Math.min(100, this.player.temp + 1);
-        }
-
-        // Damage
-        if(this.player.food===0 || this.player.water===0 || this.player.temp===0) this.player.hp -= 1;
-        
-        // AI Tick
-        this.world.animals.forEach(a => AI.update(a));
-
-        UI.updateHUD();
-    },
-
-    loop() {
-        Physics.update();
-        Renderer.draw();
-        requestAnimationFrame(t => this.loop(t));
-    },
-
-    save() {
-        const data = JSON.stringify({ p: this.player, w: this.world, s: this.state });
-        localStorage.setItem('janus_v10', data);
-    },
-
-    load() {
-        const d = localStorage.getItem('janus_v10');
-        if(!d) return false;
-        try {
-            const parsed = JSON.parse(d);
-            this.player = parsed.p;
-            this.world = parsed.w;
-            this.state = parsed.s;
-            return true;
-        } catch(e) { console.error(e); return false; }
+    function persist() {
+      localStorage.setItem('JANUS_DEMO_DEPTH', String(state.depth));
+      localStorage.setItem('JANUS_DEMO_ENTROPY', String(state.entropy.toFixed(2)));
+      localStorage.setItem('JANUS_DEMO_TRASHCOIN', String(state.trashcoin));
     }
-};
 
-// --- INPUT & PHYSICS ---
-const Input = {
-    handle(e) {
-        const r = Game.canvas.getBoundingClientRect();
-        const mx = e.clientX - r.left + Game.state.camera.x;
-        const my = e.clientY - r.top + Game.state.camera.y;
-
-        if(Game.state.mode === 'build') {
-            Game.state.mode = 'play';
-            World.build(mx, my, Game.state.buildId);
-            return;
-        }
-
-        // Check Click on Objects
-        const obj = World.getAt(mx, my);
-        if(obj) {
-            Physics.setTarget(obj.x, obj.y, () => Interaction.interact(obj));
-        } else {
-            Physics.setTarget(mx, my);
-        }
+    function renderStats() {
+      depthEl.textContent = state.depth;
+      entropyEl.textContent = state.entropy.toFixed(2);
+      trashEl.textContent = state.trashcoin;
+      netStatus.textContent = savedApi ? 'NAS API: configured' : 'NAS API: demo mode';
     }
-};
 
-const Physics = {
-    target: null,
-    
-    setTarget(x, y, cb) {
-        this.target = { x, y, cb };
-        UI.fx(x, y, '📍');
-    },
-
-    update() {
-        const p = Game.player;
-        if(this.target) {
-            const dx = this.target.x - p.x;
-            const dy = this.target.y - p.y;
-            const dist = Math.hypot(dx, dy);
-            
-            if(dist > 5) {
-                const speed = 4;
-                const vx = (dx/dist)*speed;
-                const vy = (dy/dist)*speed;
-                
-                // Collision
-                if(!World.isSolid(p.x + vx, p.y + vy)) {
-                    p.x += vx;
-                    p.y += vy;
-                    p.facing = dx > 0 ? 1 : -1;
-                } else {
-                    this.target = null; // Stop at wall
-                }
-            } else {
-                if(this.target.cb) this.target.cb();
-                this.target = null;
-            }
-        }
+    function addLine(text, cls = '') {
+      const div = document.createElement('div');
+      div.className = `line ${cls}`.trim();
+      div.textContent = text;
+      log.appendChild(div);
+      div.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
-};
 
-const Interaction = {
-    interact(obj) {
-        // Determine Tool Speed
-        let speed = 2000;
-        const hand = Game.player.equip.hand;
-        
-        if(obj.type === 'tree') {
-            if(hand === 'axe') speed = 500;
-            this.startAction('Рубка...', speed, () => {
-                World.remove(obj);
-                Inv.add('wood', 3);
-                if(Math.random()>0.5) Inv.add('berry', 1);
-                UI.toast('+3 Дерева');
-            });
-        }
-        else if (obj.type === 'rock') {
-            if(hand === 'pick') speed = 500;
-            this.startAction('Добыча...', speed, () => {
-                World.remove(obj);
-                Inv.add('stone', 2);
-                if(Math.random()>0.3) Inv.add('iron', 1);
-                UI.toast('+Камень');
-            });
-        }
-        else if (obj.type === 'animal') {
-            const dmg = hand === 'sword' ? 20 : 5;
-            obj.hp -= dmg;
-            UI.fx(obj.x, obj.y, `-${dmg}`);
-            if(obj.hp <= 0) {
-                World.remove(obj);
-                Inv.add('meat', 1);
-                UI.toast('Добыча получена');
-            }
-        }
-        else if (obj.type === 'structure' && obj.id === 13) {
-            UI.toast('Сундук открыт (WIP)');
-        }
-    },
+    const scenes = {
+      touch: [
+        'Ты касаешься двери. Она не открывается, а вспоминает тебя. Где-то в NAS щёлкает ledger, но пока только в демо — судьба делает вид, что бесплатно.',
+        'JANUS: первый слой принят. Глубина растёт не потому, что ты умный, а потому что назад уже неудобно.'
+      ],
+      listen: [
+        'Под полом звенит TrashCoin. Не богатство, конечно, скорее философская мелочь из кармана бездомного оракула.',
+        'JANUS: валюта канала будет платить за следы, реакции и риск. Капитализм, но в плаще и с плохим сном.'
+      ],
+      telegram: [
+        'Настоящая дверь сейчас в Telegram. Там user_id станет ключом, TrashCoin — кровью экономики, а выборы перестанут быть сувениром на витрине.',
+        'Открываю врата: https://t.me/Ini_Chron_bot'
+      ]
+    };
 
-    startAction(label, time, cb) {
-        UI.toast(label);
-        // Simple delay for prototype, normally visual bar
-        setTimeout(cb, time);
+    document.querySelectorAll('.choice').forEach(button => {
+      button.addEventListener('click', () => {
+        const key = button.dataset.choice;
+        addLine(button.textContent, 'player');
+        state.depth += key === 'telegram' ? 0 : 1;
+        state.entropy = Math.min(9.99, state.entropy + (key === 'listen' ? 0.07 : 0.11));
+        persist();
+        renderStats();
+        scenes[key].forEach((text, index) => setTimeout(() => addLine(text, index ? 'system' : ''), 160 + index * 260));
+        if (key === 'telegram') setTimeout(() => window.open('https://t.me/Ini_Chron_bot', '_blank', 'noopener'), 700);
+      });
+    });
+
+    document.getElementById('saveApi').addEventListener('click', () => {
+      localStorage.setItem('JANUS_MMO_API_BASE', apiBase.value.trim());
+      netStatus.textContent = apiBase.value.trim() ? 'NAS API: configured' : 'NAS API: demo mode';
+      addLine('Endpoint сохранён локально. Когда NAS MMO API будет поднят наружу, этот shell сможет читать профиль и баланс.', 'system');
+    });
+
+    async function tryLoadProfile() {
+      const base = savedApi.replace(/\/$/, '');
+      if (!base) return;
+      try {
+        const res = await fetch(`${base}/profile`, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (typeof data.depth === 'number') state.depth = data.depth;
+        if (typeof data.entropy === 'number') state.entropy = data.entropy;
+        if (typeof data.trashcoin !== 'undefined') state.trashcoin = data.trashcoin;
+        renderStats();
+        netStatus.textContent = 'NAS API: online';
+      } catch (err) {
+        netStatus.textContent = 'NAS API: waiting';
+      }
     }
-};
 
-// --- WORLD LOGIC ---
-const World = {
-    getAt(x, y) {
-        // Priority: Animal > Structure > Object
-        const range = 30;
-        const anim = Game.world.animals.find(a => Math.hypot(a.x-x, a.y-y) < range);
-        if(anim) return {...anim, type:'animal', ref:anim};
-        
-        const struc = Game.world.structures.find(s => Math.hypot(s.x-x, s.y-y) < range);
-        if(struc) return {...struc, type:'structure', ref:struc};
-        
-        const obj = Game.world.objects.find(o => Math.hypot(o.x-x, o.y-y) < range);
-        if(obj) return {...obj, ref:obj};
-        
-        return null;
-    },
-
-    isSolid(x, y) {
-        return Game.world.structures.some(s => s.id === 10 && Math.hypot(s.x-x, s.y-y) < 20);
-    },
-
-    build(x, y, id) {
-        // Grid Snap
-        const gx = Math.floor(x/48)*48 + 24;
-        const gy = Math.floor(y/48)*48 + 24;
-        
-        if(this.isSolid(gx, gy)) { UI.toast('Занято!'); return; }
-        
-        if(Inv.has(Game.state.buildId)) {
-            // Remove resources (simplified logic: items remove self on craft, buildings use item)
-            // Wait, building usually consumes item from inv? Yes.
-            Inv.remove(Game.state.buildId, 1);
-            Game.world.structures.push({x: gx, y: gy, id: DB.items[Game.state.buildId].id});
-            UI.toast('Построено');
-        }
-    },
-
-    remove(obj) {
-        if(obj.type === 'animal') {
-            Game.world.animals = Game.world.animals.filter(a => a !== obj.ref);
-        } else {
-            Game.world.objects = Game.world.objects.filter(o => o !== obj.ref);
-        }
-    }
-};
-
-const AI = {
-    update(a) {
-        if(Math.random() < 0.02) {
-            a.tx = a.x + (Math.random()*200-100);
-            a.ty = a.y + (Math.random()*200-100);
-        }
-        if(a.tx) {
-            const dx = a.tx - a.x, dy = a.ty - a.y;
-            const dist = Math.hypot(dx, dy);
-            if(dist > 2) {
-                a.x += (dx/dist);
-                a.y += (dy/dist);
-            } else { a.tx = null; }
-        }
-    }
-};
-
-// --- INVENTORY & CRAFT ---
-const Inv = {
-    add(id, n) {
-        Game.player.inv[id] = (Game.player.inv[id]||0) + n;
-        if(UI.activeTab === 'inv') UI.renderInv();
-    },
-    remove(id, n) {
-        if((Game.player.inv[id]||0) >= n) {
-            Game.player.inv[id] -= n;
-            if(Game.player.inv[id]<=0) delete Game.player.inv[id];
-            if(UI.activeTab === 'inv') UI.renderInv();
-            if(UI.activeTab === 'craft') UI.renderCraft(); // Re-check costs
-            return true;
-        }
-        return false;
-    },
-    has(id) { return (Game.player.inv[id]||0) > 0; }
-};
-
-// --- RENDERER ---
-const Renderer = {
-    draw() {
-        const ctx = Game.ctx;
-        const w = Game.width, h = Game.height;
-        const cam = Game.state.camera;
-        const p = Game.player;
-
-        // Camera Follow
-        cam.x += (p.x - w/2 - cam.x) * 0.1;
-        cam.y += (p.y - h/2 - cam.y) * 0.1;
-
-        // 1. GROUND
-        ctx.fillStyle = '#1a2218'; // Dark Forest
-        ctx.fillRect(0,0,w,h);
-        
-        // Grid Lines (Future style)
-        ctx.strokeStyle = '#223322';
-        ctx.lineWidth = 1;
-        const offX = -cam.x % 48, offY = -cam.y % 48;
-        ctx.beginPath();
-        for(let x=offX; x<w; x+=48) { ctx.moveTo(x,0); ctx.lineTo(x,h); }
-        for(let y=offY; y<h; y+=48) { ctx.moveTo(0,y); ctx.lineTo(w,y); }
-        ctx.stroke();
-
-        // 2. WORLD OBJECTS
-        const list = [
-            ...Game.world.objects.map(o => ({...o, z:o.y})),
-            ...Game.world.structures.map(s => ({...s, type:'struct', z:s.y})),
-            ...Game.world.animals.map(a => ({...a, type:'animal', z:a.y})),
-            {...p, type:'player', z:p.y}
-        ];
-        list.sort((a,b) => a.z - b.z);
-
-        list.forEach(o => {
-            const x = o.x - cam.x;
-            const y = o.y - cam.y;
-            if(x<-50 || x>w+50 || y<-50 || y>h+50) return;
-
-            if(o.type === 'player') this.drawPlayer(ctx, x, y, p);
-            else if (o.type === 'animal') this.drawAnimal(ctx, x, y, o);
-            else if (o.type === 'struct') this.drawStruct(ctx, x, y, o);
-            else this.drawObj(ctx, x, y, o);
-        });
-
-        // 3. DAY/NIGHT CYCLE
-        const hour = Game.state.time / 60;
-        let darkness = 0;
-        if(hour < 6) darkness = 0.7 - (hour/6)*0.2; // 0.7 to 0.5
-        else if (hour > 18) darkness = 0.3 + ((hour-18)/6)*0.4; // 0.3 to 0.7
-        else darkness = 0;
-        
-        if(darkness > 0) {
-            ctx.fillStyle = `rgba(0,0,20,${darkness})`;
-            ctx.fillRect(0,0,w,h);
-            
-            // Lights (Fire)
-            Game.world.structures.forEach(s => {
-                if(s.id === 12) {
-                    const lx = s.x - cam.x, ly = s.y - cam.y;
-                    const grad = ctx.createRadialGradient(lx, ly, 10, lx, ly, 150);
-                    grad.addColorStop(0, 'rgba(255,200,50,0.6)');
-                    grad.addColorStop(1, 'rgba(0,0,0,0)');
-                    ctx.fillStyle = grad;
-                    ctx.fillRect(lx-150, ly-150, 300, 300);
-                }
-            });
-        }
-    },
-
-    drawPlayer(ctx, x, y, p) {
-        // Shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.ellipse(x, y+5, 15, 6, 0, 0, Math.PI*2); ctx.fill();
-        
-        // Body
-        ctx.fillStyle = p.equip.chest ? '#353' : '#dcb'; // Armor or Skin
-        ctx.fillRect(x-10, y-30, 20, 25);
-        // Head
-        ctx.fillStyle = '#dcb'; ctx.fillRect(x-10, y-50, 20, 20);
-        // Legs
-        ctx.fillStyle = '#223'; ctx.fillRect(x-8, y-5, 6, 15); ctx.fillRect(x+2, y-5, 6, 15);
-        // Weapon
-        if(p.equip.hand) {
-            const icon = DB.items[p.equip.hand].icon;
-            ctx.font = '20px serif';
-            ctx.fillText(icon, x+12*p.facing, y-20);
-        }
-    },
-
-    drawObj(ctx, x, y, o) {
-        if(o.type === 'tree') {
-            // Simple shadow tree
-            ctx.fillStyle = '#111'; ctx.globalAlpha = 0.2; 
-            ctx.beginPath(); ctx.ellipse(x+10, y, 20, 8, 0.5, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
-
-            ctx.font = '40px serif'; ctx.textAlign = 'center'; 
-            ctx.fillText('🌲', x, y);
-        } else {
-            ctx.font = '30px serif'; ctx.textAlign = 'center'; 
-            ctx.fillText('🪨', x, y);
-        }
-    },
-
-    drawStruct(ctx, x, y, s) {
-        ctx.font = '30px serif'; ctx.textAlign = 'center'; 
-        const icon = Object.values(DB.items).find(i => i.id === s.id).icon;
-        ctx.fillText(icon, x, y);
-    },
-
-    drawAnimal(ctx, x, y, a) {
-        ctx.font = '24px serif'; ctx.textAlign = 'center'; 
-        ctx.fillText(a.type==='boar'?'🐗':'🐇', x, y);
-    }
-};
-
-// --- UI MANAGER ---
-const UI = {
-    activeTab: null,
-    selectedItem: null,
-    selectedRecipe: null,
-
-    toggle(tab) {
-        const win = document.getElementById('main-window');
-        if(win.style.display === 'flex' && this.activeTab === tab) {
-            this.close();
-        } else {
-            this.switchTab(tab);
-        }
-    },
-
-    close() {
-        document.getElementById('main-window').classList.remove('open');
-        setTimeout(() => document.getElementById('main-window').style.display='none', 200);
-        this.activeTab = null;
-    },
-
-    switchTab(tab) {
-        this.activeTab = tab;
-        const win = document.getElementById('main-window');
-        win.style.display = 'flex';
-        setTimeout(() => win.classList.add('open'), 10);
-
-        // Tabs styling
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.getElementById(`tab-${tab}`).classList.add('active');
-
-        // Views
-        document.getElementById('view-inv').style.display = tab==='inv'?'block':'none';
-        document.getElementById('view-craft').style.display = tab==='craft'?'block':'none';
-        document.getElementById('inv-actions').style.display = 'none';
-        document.getElementById('craft-actions').style.display = 'none';
-
-        if(tab === 'inv') this.renderInv();
-        if(tab === 'craft') this.renderCraft();
-    },
-
-    renderInv() {
-        const g = document.getElementById('inv-grid');
-        g.innerHTML = '';
-        for(let k in Game.player.inv) {
-            const count = Game.player.inv[k];
-            const def = DB.items[k];
-            const el = document.createElement('div');
-            el.className = 'slot';
-            el.innerHTML = `${def.icon}<span class="slot-count">${count}</span>`;
-            el.onclick = () => this.selectItem(k);
-            g.appendChild(el);
-        }
-    },
-
-    selectItem(k) {
-        this.selectedItem = k;
-        const def = DB.items[k];
-        document.getElementById('inv-actions').style.display = 'flex';
-        document.getElementById('selected-item-name').innerText = def.name;
-        
-        const btn = document.getElementById('btn-use-item');
-        if(def.type === 'food') {
-            btn.innerText = 'СЪЕСТЬ';
-            btn.onclick = () => { Inv.remove(k,1); Game.player.food+=def.val; this.toast('Вкусно'); this.renderInv(); };
-        } else if (def.slot) {
-            btn.innerText = 'ЭКИПИРОВАТЬ';
-            btn.onclick = () => { Game.player.equip[def.slot]=k; this.toast('Надето'); };
-        } else if (def.type === 'build') {
-            btn.innerText = 'СТРОИТЬ';
-            btn.onclick = () => { Game.state.mode='build'; Game.state.buildId=k; this.close(); this.toast('Режим стройки'); };
-        } else {
-            btn.innerText = '-';
-            btn.onclick = null;
-        }
-    },
-
-    renderCraft() {
-        const g = document.getElementById('craft-grid');
-        g.innerHTML = '';
-        DB.recipes.forEach(r => {
-            const def = DB.items[r.out];
-            const el = document.createElement('div');
-            
-            // Check Availability
-            let can = true;
-            for(let res in r.cost) if((Game.player.inv[res]||0) < r.cost[res]) can = false;
-            
-            el.className = `slot ${can ? 'available' : 'unavailable'}`;
-            el.innerHTML = def.icon;
-            el.onclick = () => this.selectRecipe(r, can);
-            g.appendChild(el);
-        });
-    },
-
-    selectRecipe(r, can) {
-        this.selectedRecipe = r;
-        const def = DB.items[r.out];
-        document.getElementById('craft-actions').style.display = 'flex';
-        document.getElementById('craft-name').innerText = def.name;
-        
-        // Show Cost
-        const costDiv = document.getElementById('craft-cost');
-        costDiv.innerHTML = '';
-        for(let res in r.cost) {
-            const has = Game.player.inv[res]||0;
-            const need = r.cost[res];
-            const span = document.createElement('span');
-            span.className = has >= need ? 'ok' : 'missing';
-            span.innerText = `${DB.items[res].icon} ${has}/${need}`;
-            costDiv.appendChild(span);
-        }
-
-        const btn = document.getElementById('btn-do-craft');
-        btn.disabled = !can;
-        btn.onclick = () => {
-            for(let res in r.cost) Inv.remove(res, r.cost[res]);
-            Inv.add(r.out, r.n);
-            this.toast(`Создано: ${def.name}`);
-            this.renderCraft();
-            this.selectRecipe(r, true); // Refresh UI
-        };
-    },
-
-    updateHUD() {
-        const p = Game.player;
-        const set = (id, v) => document.getElementById(id).style.width = v + '%';
-        set('hp-bar', p.hp); set('food-bar', p.food); set('water-bar', p.water); set('temp-bar', p.temp);
-        
-        const h = Math.floor(Game.state.time/60).toString().padStart(2,'0');
-        const m = Math.floor(Game.state.time%60).toString().padStart(2,'0');
-        document.getElementById('clock').innerText = `${h}:${m}`;
-    },
-
-    toast(msg) {
-        const t = document.createElement('div'); t.className='toast'; t.innerText=msg;
-        document.getElementById('toasts').appendChild(t);
-        setTimeout(()=>t.remove(), 2000);
-    },
-
-    fx(x, y, txt) {
-        // Floating text placeholder
-    }
-};
-
-// Start
-window.onload = () => Game.init();
-
-</script>
+    renderStats();
+    tryLoadProfile();
+  </script>
 </body>
 </html>
