@@ -3,527 +3,220 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#080705" />
-  <meta name="description" content="Initium Chronicles: Janus Genesis web shell with TrashCoin economy." />
+  <meta name="theme-color" content="#08070c" />
   <title>Initium Chronicles | Janus Genesis</title>
   <style>
     :root {
-      --bg: #080705;
-      --paper: #f0dcc0;
-      --ink: #f7eddf;
-      --muted: #b89f80;
-      --gold: #d6a84d;
-      --amber: #ffcf73;
-      --blood: #8e2d24;
-      --violet: #6f56b5;
-      --green: #76c88d;
-      --panel: rgba(23, 17, 13, .78);
-      --panel-strong: rgba(10, 8, 7, .88);
-      --line: rgba(255, 207, 115, .23);
-      --shadow: 0 28px 90px rgba(0, 0, 0, .52);
-      --radius: 28px;
-      --font: Georgia, 'Times New Roman', serif;
+      --bg: #07070d;
+      --paper: rgba(18, 16, 25, .9);
+      --ink: #efe7d7;
+      --muted: #a99d8f;
+      --amber: #d6a84d;
+      --violet: #7b63b7;
+      --line: rgba(214, 168, 77, .24);
+      --serif: Georgia, "Times New Roman", serif;
+      --mono: "Cascadia Mono", Consolas, monospace;
       --ui: Verdana, Geneva, sans-serif;
     }
-
     * { box-sizing: border-box; }
-    html { min-height: 100%; background: var(--bg); }
     body {
-      min-height: 100%;
       margin: 0;
+      min-height: 100vh;
       color: var(--ink);
       font-family: var(--ui);
-      overflow-x: hidden;
       background:
-        radial-gradient(circle at 20% 15%, rgba(214, 168, 77, .18), transparent 30vw),
-        radial-gradient(circle at 80% 10%, rgba(111, 86, 181, .18), transparent 34vw),
-        radial-gradient(circle at 55% 88%, rgba(142, 45, 36, .22), transparent 38vw),
-        linear-gradient(145deg, #090705 0%, #17100c 42%, #060504 100%);
+        radial-gradient(circle at 18% 12%, rgba(123,99,183,.24), transparent 32vw),
+        radial-gradient(circle at 82% 18%, rgba(214,168,77,.18), transparent 30vw),
+        linear-gradient(145deg, #050509, #11101a 58%, #07060b);
+      display: grid;
+      place-items: center;
+      padding: 18px;
     }
-
     body::before {
-      content: '';
+      content: "";
       position: fixed;
-      inset: -20%;
+      inset: 0;
+      opacity: .18;
       pointer-events: none;
-      opacity: .2;
       background-image:
-        linear-gradient(30deg, transparent 47%, rgba(255, 207, 115, .16) 49%, transparent 51%),
-        linear-gradient(150deg, transparent 47%, rgba(255, 255, 255, .08) 49%, transparent 51%);
-      background-size: 72px 72px;
-      mask-image: radial-gradient(circle at center, #000 0%, transparent 72%);
-      animation: drift 26s linear infinite;
+        linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px),
+        linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: radial-gradient(circle at 50% 45%, black 0 42%, transparent 78%);
     }
-
-    @keyframes drift { to { transform: translate3d(72px, 72px, 0); } }
-
-    .wrap {
-      width: min(1180px, calc(100% - 28px));
-      margin: 0 auto;
-      padding: 22px 0 42px;
+    .book {
+      width: min(920px, 100%);
+      border: 1px solid var(--line);
+      border-radius: 30px;
+      background: var(--paper);
+      box-shadow: 0 28px 90px rgba(0,0,0,.55);
+      padding: clamp(20px, 5vw, 42px);
+      position: relative;
+      overflow: hidden;
     }
-
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      margin-bottom: 22px;
+    .book::after {
+      content: "";
+      position: absolute;
+      inset: auto -20% -45% 20%;
+      height: 280px;
+      background: radial-gradient(circle, rgba(214,168,77,.17), transparent 65%);
+      pointer-events: none;
     }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 13px;
-      min-width: 0;
-    }
-
-    .sigil {
-      width: 50px;
-      height: 50px;
-      border-radius: 18px;
+    .seal {
+      width: 64px;
+      height: 64px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
       display: grid;
       place-items: center;
       color: var(--amber);
-      font: 700 27px/1 var(--font);
-      background:
-        radial-gradient(circle at 30% 20%, rgba(255, 207, 115, .5), transparent 24px),
-        linear-gradient(145deg, rgba(111, 86, 181, .55), rgba(142, 45, 36, .5));
-      border: 1px solid var(--line);
-      box-shadow: inset 0 0 28px rgba(255, 207, 115, .12), 0 14px 40px rgba(0,0,0,.35);
-    }
-
-    .brand h1 {
-      margin: 0;
-      font: 700 clamp(18px, 4vw, 28px)/1.05 var(--font);
-      letter-spacing: .04em;
-      white-space: nowrap;
-    }
-
-    .brand small {
-      display: block;
-      margin-top: 4px;
-      color: var(--muted);
-      font-size: 12px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-    }
-
-    .pill {
-      border: 1px solid var(--line);
-      color: var(--amber);
-      background: rgba(255, 207, 115, .08);
-      padding: 9px 12px;
-      border-radius: 999px;
-      font-size: 12px;
-      white-space: nowrap;
-    }
-
-    .hero {
-      display: grid;
-      grid-template-columns: 1.08fr .92fr;
-      gap: 22px;
-      align-items: stretch;
-    }
-
-    .card {
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--panel);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(18px);
-      overflow: hidden;
-    }
-
-    .hero-copy {
-      padding: clamp(22px, 5vw, 46px);
-      position: relative;
-      min-height: 560px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .hero-copy::after {
-      content: '';
-      position: absolute;
-      right: -80px;
-      bottom: -100px;
-      width: 310px;
-      height: 310px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(214, 168, 77, .18), transparent 68%);
-      pointer-events: none;
-    }
-
-    .kicker {
-      color: var(--gold);
-      letter-spacing: .22em;
-      text-transform: uppercase;
-      font-size: 12px;
+      font: 900 34px/1 var(--serif);
+      background: linear-gradient(135deg, rgba(123,99,183,.58), rgba(39,34,52,.82));
       margin-bottom: 18px;
     }
-
-    .hero h2 {
+    h1 {
       margin: 0;
-      font: 800 clamp(43px, 9vw, 92px)/.84 var(--font);
+      font: 900 clamp(32px, 8vw, 72px)/.92 var(--serif);
       letter-spacing: -.055em;
-      text-wrap: balance;
     }
-
-    .hero h2 span { color: var(--amber); }
-
-    .lead {
+    .sub {
+      margin: 16px 0 28px;
       max-width: 720px;
-      margin: 22px 0 0;
-      color: #eadcc9;
-      font: 18px/1.65 var(--font);
+      color: var(--muted);
+      font: 15px/1.65 var(--mono);
     }
-
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
+    .panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 12px;
-      margin-top: 30px;
-      position: relative;
-      z-index: 1;
+      margin: 18px 0;
     }
-
-    .btn {
-      appearance: none;
-      border: 0;
-      cursor: pointer;
-      text-decoration: none;
+    label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      padding: 14px 15px;
+      background: rgba(0,0,0,.24);
+      color: var(--ink);
+      outline: none;
+      font: 16px/1.2 var(--mono);
+    }
+    button, a.button {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      min-height: 48px;
+      min-height: 50px;
+      border: 0;
       border-radius: 16px;
-      padding: 13px 18px;
-      font-weight: 800;
-      color: #1c1007;
-      background: linear-gradient(135deg, #ffe0a0, #d39a37);
-      box-shadow: 0 12px 34px rgba(214, 168, 77, .28);
-    }
-
-    .btn.secondary {
-      color: var(--ink);
-      background: rgba(255, 255, 255, .07);
-      border: 1px solid var(--line);
-      box-shadow: none;
-    }
-
-    .status-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-top: 30px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .stat {
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 18px;
-      padding: 13px;
-      background: rgba(0,0,0,.22);
-    }
-
-    .stat b { display: block; color: var(--amber); font-size: 20px; }
-    .stat span { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
-
-    .terminal {
-      min-height: 560px;
-      display: flex;
-      flex-direction: column;
-      background:
-        radial-gradient(circle at 50% 0%, rgba(118, 200, 141, .1), transparent 40%),
-        var(--panel-strong);
-    }
-
-    .terminal-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 17px 18px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .dots { display: flex; gap: 7px; }
-    .dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--blood); }
-    .dots i:nth-child(2) { background: var(--gold); }
-    .dots i:nth-child(3) { background: var(--green); }
-
-    .terminal-body {
-      flex: 1;
-      padding: 18px;
-      display: grid;
-      gap: 13px;
-      align-content: start;
-    }
-
-    .line {
-      padding: 14px 15px;
-      border-radius: 17px;
-      background: rgba(255,255,255,.055);
-      border: 1px solid rgba(255,255,255,.07);
-      line-height: 1.5;
-      color: #eee1cf;
-    }
-
-    .line.system { color: var(--amber); }
-    .line.player { margin-left: 24px; color: #d8f5df; border-color: rgba(118, 200, 141, .22); }
-
-    .choice-grid {
-      display: grid;
-      gap: 10px;
-      padding: 0 18px 18px;
-    }
-
-    .choice {
-      text-align: left;
-      color: var(--ink);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      background: rgba(255, 207, 115, .08);
-      padding: 14px;
+      padding: 14px 18px;
+      color: #160f07;
+      background: linear-gradient(135deg, #f2d28d, #d6a84d);
+      font-weight: 900;
+      text-decoration: none;
       cursor: pointer;
-      transition: transform .16s ease, background .16s ease;
     }
-
-    .choice:hover { transform: translateY(-1px); background: rgba(255, 207, 115, .14); }
-
-    .panels {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-      margin-top: 22px;
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
     }
-
-    .panel { padding: 20px; }
-    .panel h3 { margin: 0 0 12px; color: var(--amber); font: 700 22px/1.1 var(--font); }
-    .panel p, .panel li { color: #d8c7b1; line-height: 1.55; font-size: 14px; }
-    .panel ul { padding-left: 18px; margin: 0; }
-
-    .config {
-      margin-top: 22px;
-      padding: 18px;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 12px;
-      align-items: center;
+    .ghost {
+      color: var(--ink) !important;
+      background: rgba(255,255,255,.06) !important;
+      border: 1px solid var(--line) !important;
     }
-
-    .config label { color: var(--muted); font-size: 13px; }
-    .config input {
-      width: 100%;
-      margin-top: 7px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: rgba(0,0,0,.28);
-      color: var(--ink);
-      padding: 13px 14px;
-      outline: none;
+    .note {
+      margin-top: 18px;
+      color: var(--muted);
+      font: 12px/1.65 var(--mono);
     }
-
-    .footer {
-      color: rgba(240, 220, 192, .55);
-      text-align: center;
-      margin-top: 28px;
-      font-size: 12px;
-      line-height: 1.6;
+    .status {
+      margin-top: 14px;
+      color: var(--amber);
+      font: 13px/1.45 var(--mono);
+      min-height: 20px;
     }
-
-    @media (max-width: 860px) {
-      .wrap { width: min(100% - 18px, 680px); padding-top: 12px; }
-      .topbar { align-items: flex-start; }
-      .pill { display: none; }
-      .hero { grid-template-columns: 1fr; }
-      .hero-copy, .terminal { min-height: auto; }
-      .status-grid, .panels { grid-template-columns: 1fr; }
-      .hero h2 { font-size: clamp(46px, 18vw, 76px); }
-      .lead { font-size: 16px; }
-      .config { grid-template-columns: 1fr; }
-      .btn { width: 100%; }
+    @media (max-width: 720px) {
+      .panel { grid-template-columns: 1fr; }
+      .buttons { display: grid; }
+      button, a.button { width: 100%; }
     }
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <header class="topbar">
-      <div class="brand">
-        <div class="sigil">J</div>
-        <div>
-          <h1>Initium Chronicles</h1>
-          <small>Janus Genesis / TrashCoin economy</small>
-        </div>
+  <main class="book">
+    <div class="seal">J</div>
+    <h1>Initium Chronicles</h1>
+    <p class="sub">
+      Дверь в Janus Genesis. Сама игра, инвентарь, предметы и TrashCoin живут на NAS.
+      Эта страница только передаёт Telegram ID игрока в Живой Хроникон.
+    </p>
+
+    <section class="panel">
+      <div>
+        <label for="userId">Telegram ID игрока</label>
+        <input id="userId" inputmode="numeric" autocomplete="off" placeholder="123456789" />
       </div>
-      <div class="pill" id="netStatus">NAS API: not configured</div>
-    </header>
-
-    <section class="hero">
-      <article class="card hero-copy">
-        <div>
-          <div class="kicker">The Mirror Protocol</div>
-          <h2>Текстовая MMO,<br><span>где выбор не отматывается.</span></h2>
-          <p class="lead">
-            Janus Genesis становится web-shell и Telegram-first игрой: состояние игрока, лор,
-            инвентарь и TrashCoin живут в единой SQLite-экономике на NAS. Браузер показывает врата,
-            Telegram ведёт игрока внутрь, а Янус записывает следы в чёрный ящик.
-          </p>
-        </div>
-
-        <div>
-          <div class="actions">
-            <a class="btn" href="https://t.me/Ini_Chron_bot" target="_blank" rel="noopener">Войти через Telegram</a>
-            <a class="btn secondary" href="tg://resolve?domain=Ini_Chron_bot">Открыть в приложении</a>
-          </div>
-          <div class="status-grid">
-            <div class="stat"><b id="depth">1</b><span>Depth</span></div>
-            <div class="stat"><b id="entropy">0.10</b><span>Entropy</span></div>
-            <div class="stat"><b id="trashcoin">?</b><span>TrashCoin</span></div>
-          </div>
-        </div>
-      </article>
-
-      <article class="card terminal" aria-label="Janus Genesis preview">
-        <div class="terminal-head">
-          <div class="dots"><i></i><i></i><i></i></div>
-          <small>BLACKBOX PREVIEW</small>
-        </div>
-        <div class="terminal-body" id="log">
-          <div class="line system">JANUS: зеркало проснулось. Пока NAS-ворота не открыты наружу, это демо-контур без списаний и наград.</div>
-          <div class="line">Ты стоишь перед дверью, на которой нет ручки. В щели между створками слышен шелест монет, будто кто-то пересчитывает твои будущие ошибки.</div>
-          <div class="line player">Выбери первый импульс. Чёрный ящик уже смотрит.</div>
-        </div>
-        <div class="choice-grid">
-          <button class="choice" data-choice="touch">Коснуться двери и принять зеркало</button>
-          <button class="choice" data-choice="listen">Прислушаться к шуму TrashCoin под полом</button>
-          <button class="choice" data-choice="telegram">Продолжить в Telegram, где состояние станет настоящим</button>
-        </div>
-      </article>
+      <div>
+        <label for="name">Имя в хронике</label>
+        <input id="name" autocomplete="off" placeholder="Странник" />
+      </div>
     </section>
 
-    <section class="panels">
-      <article class="card panel">
-        <h3>Единая экономика</h3>
-        <p>TrashCoin привязан к Telegram user_id. Один ledger кормит Ленчика, MMO и будущий слот. Никаких монет из воздуха вне журнала операций.</p>
-      </article>
-      <article class="card panel">
-        <h3>Black Box</h3>
-        <p>Каждое значимое действие игрока будет записываться в события MMO. Откатить судьбу нельзя, максимум — красиво соврать себе, что это был план.</p>
-      </article>
-      <article class="card panel">
-        <h3>NAS-first</h3>
-        <p>Gemini и тяжёлые действия вызываются дозированно. NAS не должен превращаться в печку ради одного героя, который решил потрогать подозрительную стену.</p>
-      </article>
-    </section>
+    <div class="buttons">
+      <button id="openGame">Открыть Живой Хроникон</button>
+      <a class="button ghost" href="https://t.me/Ini_Chron_bot" target="_blank" rel="noopener">Telegram бот игры</a>
+    </div>
 
-    <section class="card config">
-      <label>
-        Future NAS MMO API endpoint
-        <input id="apiBase" placeholder="https://your-domain.example/api/mmo или локальный reverse proxy" />
-      </label>
-      <button class="btn secondary" id="saveApi">Сохранить endpoint</button>
-    </section>
-
-    <footer class="footer">
-      No Telegram or Gemini tokens are stored here. This page is only the public shell; the real economy lives server-side on NAS.<br>
-      Build: Initium Chronicles web shell v0.1
-    </footer>
+    <div class="status" id="status"></div>
+    <p class="note">
+      Если страница открыта из Telegram-бота, он может добавить <code>?user_id=...</code> сам.
+      Если открываешь вручную, введи свой Telegram ID. Это временный dev-mode до Telegram WebApp auth.
+    </p>
   </main>
 
   <script>
-    const log = document.getElementById('log');
-    const depthEl = document.getElementById('depth');
-    const entropyEl = document.getElementById('entropy');
-    const trashEl = document.getElementById('trashcoin');
-    const netStatus = document.getElementById('netStatus');
-    const apiBase = document.getElementById('apiBase');
-    const savedApi = localStorage.getItem('JANUS_MMO_API_BASE') || '';
-    apiBase.value = savedApi;
+    const NAS_GAME_URL = "http://192.168.1.92:8791/";
+    const params = new URLSearchParams(location.search);
+    const userId = document.getElementById("userId");
+    const nameInput = document.getElementById("name");
+    const statusBox = document.getElementById("status");
 
-    const state = {
-      depth: Number(localStorage.getItem('JANUS_DEMO_DEPTH') || 1),
-      entropy: Number(localStorage.getItem('JANUS_DEMO_ENTROPY') || 0.10),
-      trashcoin: localStorage.getItem('JANUS_DEMO_TRASHCOIN') || '?'
-    };
+    userId.value = params.get("user_id") || localStorage.getItem("initium_user_id") || "";
+    nameInput.value = params.get("name") || localStorage.getItem("initium_name") || "";
 
-    function persist() {
-      localStorage.setItem('JANUS_DEMO_DEPTH', String(state.depth));
-      localStorage.setItem('JANUS_DEMO_ENTROPY', String(state.entropy.toFixed(2)));
-      localStorage.setItem('JANUS_DEMO_TRASHCOIN', String(state.trashcoin));
-    }
-
-    function renderStats() {
-      depthEl.textContent = state.depth;
-      entropyEl.textContent = state.entropy.toFixed(2);
-      trashEl.textContent = state.trashcoin;
-      netStatus.textContent = savedApi ? 'NAS API: configured' : 'NAS API: demo mode';
-    }
-
-    function addLine(text, cls = '') {
-      const div = document.createElement('div');
-      div.className = `line ${cls}`.trim();
-      div.textContent = text;
-      log.appendChild(div);
-      div.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }
-
-    const scenes = {
-      touch: [
-        'Ты касаешься двери. Она не открывается, а вспоминает тебя. Где-то в NAS щёлкает ledger, но пока только в демо — судьба делает вид, что бесплатно.',
-        'JANUS: первый слой принят. Глубина растёт не потому, что ты умный, а потому что назад уже неудобно.'
-      ],
-      listen: [
-        'Под полом звенит TrashCoin. Не богатство, конечно, скорее философская мелочь из кармана бездомного оракула.',
-        'JANUS: валюта канала будет платить за следы, реакции и риск. Капитализм, но в плаще и с плохим сном.'
-      ],
-      telegram: [
-        'Настоящая дверь сейчас в Telegram. Там user_id станет ключом, TrashCoin — кровью экономики, а выборы перестанут быть сувениром на витрине.',
-        'Открываю врата: https://t.me/Ini_Chron_bot'
-      ]
-    };
-
-    document.querySelectorAll('.choice').forEach(button => {
-      button.addEventListener('click', () => {
-        const key = button.dataset.choice;
-        addLine(button.textContent, 'player');
-        state.depth += key === 'telegram' ? 0 : 1;
-        state.entropy = Math.min(9.99, state.entropy + (key === 'listen' ? 0.07 : 0.11));
-        persist();
-        renderStats();
-        scenes[key].forEach((text, index) => setTimeout(() => addLine(text, index ? 'system' : ''), 160 + index * 260));
-        if (key === 'telegram') setTimeout(() => window.open('https://t.me/Ini_Chron_bot', '_blank', 'noopener'), 700);
-      });
-    });
-
-    document.getElementById('saveApi').addEventListener('click', () => {
-      localStorage.setItem('JANUS_MMO_API_BASE', apiBase.value.trim());
-      netStatus.textContent = apiBase.value.trim() ? 'NAS API: configured' : 'NAS API: demo mode';
-      addLine('Endpoint сохранён локально. Когда NAS MMO API будет поднят наружу, этот shell сможет читать профиль и баланс.', 'system');
-    });
-
-    async function tryLoadProfile() {
-      const base = savedApi.replace(/\/$/, '');
-      if (!base) return;
-      try {
-        const res = await fetch(`${base}/profile`, { cache: 'no-store' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        if (typeof data.depth === 'number') state.depth = data.depth;
-        if (typeof data.entropy === 'number') state.entropy = data.entropy;
-        if (typeof data.trashcoin !== 'undefined') state.trashcoin = data.trashcoin;
-        renderStats();
-        netStatus.textContent = 'NAS API: online';
-      } catch (err) {
-        netStatus.textContent = 'NAS API: waiting';
+    function openGame() {
+      const id = userId.value.trim();
+      const name = nameInput.value.trim();
+      if (!id) {
+        statusBox.textContent = "Сначала нужен Telegram ID. Без имени дверь ещё можно открыть, без ID — это уже философия, а не аккаунт.";
+        userId.focus();
+        return;
       }
+      localStorage.setItem("initium_user_id", id);
+      localStorage.setItem("initium_name", name);
+      const target = new URL(NAS_GAME_URL);
+      target.searchParams.set("user_id", id);
+      if (name) target.searchParams.set("name", name);
+      statusBox.textContent = "Открываю NAS-Хроникон...";
+      location.href = target.toString();
     }
 
-    renderStats();
-    tryLoadProfile();
+    document.getElementById("openGame").addEventListener("click", openGame);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) openGame();
+    });
+
+    if (params.get("autostart") === "1" && userId.value.trim()) {
+      setTimeout(openGame, 500);
+    }
   </script>
 </body>
 </html>
